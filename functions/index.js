@@ -17,7 +17,7 @@ exports.hello = onCall(async (request) => {
     const uid = request.auth.uid;
     console.log(`Authenticated call by user: ${uid}`);
 
-    const name = `projects/949028813912/secrets/solana-private-key/versions/latest`;
+    const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/solana-private-key/versions/latest`;
     const [version] = await client.accessSecretVersion({name});
     const privateKeyBase58 = version.payload.data.toString('utf8');
     const privateKeyUint8 = bs58.decode(privateKeyBase58);
