@@ -29,6 +29,6 @@ exports.hello = onCall(async (request) => {
 
     return { 
         message: message,
-        signedMessage: nacl.util.encodeBase64(signedMessage),
+        signedMessage: bs58.encode(signedMessage),
       };
 });
