@@ -7,15 +7,24 @@ nacl.util = require('tweetnacl-util');
 const {SecretManagerServiceClient} = require('@google-cloud/secret-manager');
 const client = new SecretManagerServiceClient();
 const bs58 = require('bs58');
+const admin = require('firebase-admin');
+admin.initializeApp();
 
-exports.hello = onCall(async (request) => {
+exports.gameResult = onCall(async (request) => {
 
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
       }
 
     const uid = request.auth.uid;
+    const id = request.data.id;
+
     console.log(`Authenticated call by user: ${uid}`);
+
+    const matchRef = admin.database().ref(`players/${uid}/matches/${id}`);
+    const snapshot = await matchRef.once('value');
+    const matchData = snapshot.val();
+    console.log(`Got match data: ${matchData}`);
 
     const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/solana-private-key/versions/latest`;
     const [version] = await client.accessSecretVersion({name});
@@ -30,5 +39,6 @@ exports.hello = onCall(async (request) => {
     return { 
         message: message,
         signedMessage: bs58.encode(signedMessage),
+        smth: matchData.fen
       };
 });
