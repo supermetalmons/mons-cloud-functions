@@ -11,10 +11,14 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 exports.gameResult = onCall(async (request) => {
-
     if (!request.auth) {
-        throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
-      }
+      throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
+    }
+
+    const signatureType = request.data.signature;
+    if (signatureType != "ed25519") {
+      throw new HttpsError("invalid-argument", "Unsupported signature type");
+    }
 
     const uid = request.auth.uid;
     const id = request.data.id;
