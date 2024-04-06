@@ -30,6 +30,9 @@ exports.gameResult = onCall(async (request) => {
     const matchData = snapshot.val();
     console.log(`Got match data: ${matchData}`);
 
+    const mons = await import('mons-rust');
+    const monsOutput = mons.greet("world");
+
     const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/solana-private-key/versions/latest`;
     const [version] = await client.accessSecretVersion({name});
     const privateKeyBase58 = version.payload.data.toString('utf8');
@@ -43,6 +46,7 @@ exports.gameResult = onCall(async (request) => {
     return { 
         message: message,
         signedMessage: bs58.encode(signedMessage),
-        smth: matchData.fen
+        smth: matchData.fen,
+        monsOutput: monsOutput
       };
 });
