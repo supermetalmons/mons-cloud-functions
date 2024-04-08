@@ -41,8 +41,10 @@ exports.gameResult = onCall(async (request) => {
       result = "win";
       resultForChain = `${id}+${uid}`;
     } else {
+      const color = matchData.color;
       const mons = await import('mons-rust');
-      const rustOutput = mons.greet("world"); // TODO: use mons-rust to validate fen
+      const rustOutput = mons.winner(matchData.fen, opponentMatchData.fen, matchData.flatMovesString, opponentMatchData.flatMovesString);
+      resultForChain = rustOutput; // TODO: setup correctly
     }
     
     const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/solana-private-key/versions/latest`;
