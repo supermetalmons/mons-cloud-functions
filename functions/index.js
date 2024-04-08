@@ -44,7 +44,7 @@ exports.gameResult = onCall(async (request) => {
     const signedMessage = nacl.sign(messageUint8, keyPair.secretKey);
 
     return {
-        result: "draw",
+        result: "draw", // TODO: gg / win / none
         signedMessage: bs58.encode(signedMessage),
         fen: matchData.fen,
         rustOutput: rustOutput
