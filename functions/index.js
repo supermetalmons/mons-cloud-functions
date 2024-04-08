@@ -33,7 +33,7 @@ exports.gameResult = onCall(async (request) => {
     const opponentMatchData = opponentMatchSnapshot.val();
 
     var result = "none"; // gg / win / none / draw
-    var resultForChain = "none";
+    var resultForChain = `${id}+none`;
     if (matchData.status == "surrendered") {
       result = "gg";
       resultForChain = `${id}+${opponentId}`;
@@ -42,9 +42,25 @@ exports.gameResult = onCall(async (request) => {
       resultForChain = `${id}+${uid}`;
     } else {
       const color = matchData.color;
+      const opponentColor = opponentMatchData.color;
       const mons = await import('mons-rust');
-      const rustOutput = mons.winner(matchData.fen, opponentMatchData.fen, matchData.flatMovesString, opponentMatchData.flatMovesString);
-      resultForChain = rustOutput; // TODO: setup correctly
+      const winnerColorFen = mons.winner(matchData.fen, opponentMatchData.fen, matchData.flatMovesString, opponentMatchData.flatMovesString);
+      if (winnerColorFen != "") {
+        var winnerColor = "none";
+        if (winnerColorFen == "w") {
+          winnerColor = "white";
+        } else if (winnerColorFen == "b") {
+          winnerColor = "black";
+        }
+
+        if (winnerColor == color) {
+          result = "win";
+          resultForChain = `${id}+${uid}`;
+        } else if (winnerColor == opponentColor) {
+          result = "gg";
+          resultForChain = `${id}+${opponentId}`;
+        }
+      }
     }
     
     const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/solana-private-key/versions/latest`;
