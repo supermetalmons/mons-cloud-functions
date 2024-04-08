@@ -31,7 +31,7 @@ exports.gameResult = onCall(async (request) => {
     console.log(`Got match data: ${matchData}`);
 
     const mons = await import('mons-rust');
-    const monsOutput = mons.greet("world");
+    const rustOutput = mons.greet("world");
 
     const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/solana-private-key/versions/latest`;
     const [version] = await client.accessSecretVersion({name});
@@ -43,10 +43,10 @@ exports.gameResult = onCall(async (request) => {
     const messageUint8 = nacl.util.decodeUTF8(message);
     const signedMessage = nacl.sign(messageUint8, keyPair.secretKey);
 
-    return { 
-        message: message,
+    return {
+        result: "draw",
         signedMessage: bs58.encode(signedMessage),
-        smth: matchData.fen,
-        monsOutput: monsOutput
+        fen: matchData.fen,
+        rustOutput: rustOutput
       };
 });
