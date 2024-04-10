@@ -44,7 +44,12 @@ exports.gameResult = onCall(async (request) => {
       const color = matchData.color;
       const opponentColor = opponentMatchData.color;
       const mons = await import('mons-rust');
-      const winnerColorFen = mons.winner(matchData.fen, opponentMatchData.fen, matchData.flatMovesString, opponentMatchData.flatMovesString);
+      var winnerColorFen = "";
+      if (color == "white") {
+        winnerColorFen = mons.winner(matchData.fen, opponentMatchData.fen, matchData.flatMovesString, opponentMatchData.flatMovesString);
+      } else {
+        winnerColorFen = mons.winner(opponentMatchData.fen, matchData.fen, opponentMatchData.flatMovesString, matchData.flatMovesString);
+      }
       if (winnerColorFen != "") {
         var winnerColor = "none";
         if (winnerColorFen == "w") {
