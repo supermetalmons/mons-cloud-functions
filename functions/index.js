@@ -77,6 +77,10 @@ exports.gameResult = onCall(async (request) => {
       const gameID = convertBase62StringToBN(id);
       const seeds = [Buffer.from('game'), Buffer.from(new BN(gameID).toArrayLike(Buffer, 'le', 8))];
       const [gamePDA, bump] = await PublicKey.findProgramAddress(seeds, new PublicKey(request.data.params.pid));
+
+      const hexData = "3d89a47c8efefb465c7cfe48dfc339888103a38c1cad2d059798733e96dc7378";
+      const instructionBuffer = Buffer.from(hexData.substring(0, 16), 'hex');
+
       const endGameIx = new TransactionInstruction({
         keys: [
           {pubkey: gamePDA, isSigner: false, isWritable: true},
@@ -84,7 +88,7 @@ exports.gameResult = onCall(async (request) => {
           {pubkey: keyPair.publicKey, isSigner: true, isWritable: false}
         ],
         programId: new PublicKey(request.data.params.pid),
-        data: Buffer.alloc(0)
+        data: instructionBuffer
       });
 
       transaction.add(endGameIx);
