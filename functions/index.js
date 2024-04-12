@@ -33,13 +33,10 @@ exports.gameResult = onCall(async (request) => {
     const opponentMatchData = opponentMatchSnapshot.val();
 
     var result = "none"; // gg / win / none / draw
-    var resultForChain = `${id}+none`;
     if (matchData.status == "surrendered") {
       result = "gg";
-      resultForChain = `${id}+${opponentId}`;
     } else if (opponentMatchData.status == "surrendered") {
       result = "win";
-      resultForChain = `${id}+${uid}`;
     } else {
       const color = matchData.color;
       const opponentColor = opponentMatchData.color;
@@ -60,57 +57,52 @@ exports.gameResult = onCall(async (request) => {
 
         if (winnerColor == color) {
           result = "win";
-          resultForChain = `${id}+${uid}`;
         } else if (winnerColor == opponentColor) {
           result = "gg";
-          resultForChain = `${id}+${opponentId}`;
         }
       }
     }
     
-    const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/solana-private-key/versions/latest`;
-    const [version] = await client.accessSecretVersion({name});
-    const privateKeyBase58 = version.payload.data.toString('utf8');
-    const privateKeyUint8 = bs58.decode(privateKeyBase58);
+    if (result === "win") {
+      const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/solana-private-key/versions/latest`;
+      const [version] = await client.accessSecretVersion({name});
+      const privateKeyBase58 = version.payload.data.toString('utf8');
+      const privateKeyUint8 = bs58.decode(privateKeyBase58);
+      const keyPair = Keypair.fromSecretKey(privateKeyUint8);
+      const transaction = new Transaction({
+        recentBlockhash: request.data.params.recentBlockhash,
+        feePayer: new PublicKey(request.data.params.caller),
+      });
 
-    const keyPair = Keypair.fromSecretKey(privateKeyUint8);
+      const gameID = convertBase62StringToBN(id);
+      const seeds = [Buffer.from('game'), Buffer.from(new BN(gameID).toArrayLike(Buffer, 'le', 8))];
+      const [gamePDA, bump] = await PublicKey.findProgramAddress(seeds, new PublicKey(request.data.params.pid));
+      const endGameIx = new TransactionInstruction({
+        keys: [
+          {pubkey: gamePDA, isSigner: false, isWritable: true},
+          {pubkey: new PublicKey(request.data.params.caller), isSigner: true, isWritable: true},
+          {pubkey: keyPair.publicKey, isSigner: true, isWritable: false}
+        ],
+        programId: new PublicKey(request.data.params.pid),
+        data: Buffer.alloc(0)
+      });
 
-    // TODO: use correct addresses
-    // TODO: only respond with a tx to a winner
+      transaction.add(endGameIx);
+      transaction.partialSign(keyPair);
+      const serializedTransaction = transaction.serialize({
+        requireAllSignatures: false
+      });
 
-    const transaction = new Transaction({
-      recentBlockhash: request.data.params.recentBlockhash,
-      feePayer: new PublicKey('7YAH3GzfkZiEuESsYPccNf8u4kExNXQjx9yzUmeyM8Fv'),
-    });
-
-    const gameID = convertBase62StringToBN(id);
-    const seeds = [Buffer.from('game'), Buffer.from(new BN(gameID).toArrayLike(Buffer, 'le', 8))];
-    const [gamePDA, bump] = await PublicKey.findProgramAddress(seeds, new PublicKey('23pPB7HdhdLukP8HxKSDoaSgrf6ESunhQMTCYm9DkJNp'));
-
-    const endGameIx = new TransactionInstruction({
-      keys: [
-        {pubkey: gamePDA, isSigner: false, isWritable: true},
-        {pubkey: new PublicKey('7YAH3GzfkZiEuESsYPccNf8u4kExNXQjx9yzUmeyM8Fv'), isSigner: true, isWritable: true},
-        {pubkey: keyPair.publicKey, isSigner: true, isWritable: false}
-      ],
-      programId: new PublicKey('23pPB7HdhdLukP8HxKSDoaSgrf6ESunhQMTCYm9DkJNp'),
-      data: Buffer.alloc(0)
-    });
-    transaction.add(endGameIx);
-
-    transaction.partialSign(keyPair);
-    const serializedTransaction = transaction.serialize({
-      requireAllSignatures: false
-    });
-
-    return {
-        remoteCaller: request.data.params.caller,
+      return {
         result: result,
-        resultForChain: resultForChain,
         signed: serializedTransaction.toString('base64'),
       };
+    } else {
+      return {
+        result: result,
+      };
+    }
 });
-
 
 function convertBase62StringToBN(str) {
   const base62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
