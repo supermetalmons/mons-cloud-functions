@@ -77,6 +77,7 @@ exports.gameResult = onCall(async (request) => {
     const signed = nacl.sign(messageUint8, keyPair.secretKey);
 
     return {
+        remoteCaller: request.data.params.caller,
         result: result,
         resultForChain: resultForChain,
         signed: bs58.encode(signed),
