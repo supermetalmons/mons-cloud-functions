@@ -18,12 +18,12 @@
     "bn.js": "^5.2.1",
     "bs58": "^5.0.0",
     "buffer": "^6.0.3",
-    "firebase-admin": "^11.8.0",
-    "firebase-functions": "^4.3.1",
-    "mons-rust": "^0.1.4"
+    "firebase-admin": "^12.1.0",
+    "firebase-functions": "^4.9.0",
+    "mons-rust": "^0.1.5"
   },
   "devDependencies": {
-    "firebase-functions-test": "^3.1.0"
+    "firebase-functions-test": "^3.2.0"
   },
   "private": true
 }
