@@ -48,6 +48,8 @@ exports.gameResult = onCall(async (request) => {
         winnerColorFen = mons.winner(opponentMatchData.fen, matchData.fen, opponentMatchData.flatMovesString, matchData.flatMovesString);
       }
       if (winnerColorFen != "") {
+        // TODO: process "x" doing a split
+
         var winnerColor = "none";
         if (winnerColorFen == "w") {
           winnerColor = "white";
