@@ -10,6 +10,21 @@ const bs58 = require('bs58');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
+exports.verifyEthAddress = onCall(async (request) => {
+  if (!request.auth) { throw new HttpsError("unauthenticated", "The function must be called while authenticated."); }
+
+  const message = request.data.message;
+  const signature = request.data.signature;
+
+  // TODO: verify, associate an address with a user
+
+  return {
+    result: true,
+    message: message, // TODO: remove tmp mirror
+    signature: signature, // TODO: remove tmp mirror
+  };
+});
+
 exports.gameResult = onCall(async (request) => {
     if (!request.auth) { throw new HttpsError("unauthenticated", "The function must be called while authenticated."); }
     const signatureType = request.data.signature;
