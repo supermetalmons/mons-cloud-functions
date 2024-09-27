@@ -1,6 +1,4 @@
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
-const {logger} = require("firebase-functions/v2");
-
 const { TransactionInstruction, Keypair, PublicKey, Transaction } = require('@solana/web3.js');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const { Buffer } = require('buffer');
@@ -14,18 +12,15 @@ exports.verifyEthAddress = onCall(async (request) => {
   if (!request.auth) { throw new HttpsError("unauthenticated", "The function must be called while authenticated."); }
 
   const message = request.data.message;
-  const signature = request.data.signature;
-
-  // TODO: verify, associate an address with a user
+  const signature = request.data.signature; // TODO: verify, associate an address with a user
 
   return {
-    result: true,
+    ok: true,
     message: message, // TODO: remove tmp mirror
-    signature: signature, // TODO: remove tmp mirror
   };
 });
 
-exports.gameResult = onCall(async (request) => {
+async function gameResult(request) {
     if (!request.auth) { throw new HttpsError("unauthenticated", "The function must be called while authenticated."); }
     const signatureType = request.data.signature;
     if (signatureType != "ed25519") { throw new HttpsError("invalid-argument", "Unsupported signature type"); }
@@ -120,7 +115,7 @@ exports.gameResult = onCall(async (request) => {
         result: result,
       };
     }
-});
+}
 
 function convertBase62StringToBN(str) {
   const base62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
