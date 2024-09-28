@@ -24,6 +24,11 @@ exports.verifyEthAddress = onCall(async (request) => {
   if (!existingClaims.ethAddress) {
     existingClaims.ethAddress = address;
     await admin.auth().setCustomUserClaims(uid, existingClaims);
+    const db = admin.database();
+    const playerRef = db.ref(`players/${uid}`);
+    await playerRef.update({
+      ethAddress: address
+    });
   } else {
     responseAddress = existingClaims.ethAddress;
   }
