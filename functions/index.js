@@ -14,14 +14,24 @@ exports.verifyEthAddress = onCall(async (request) => {
 
   const siweMessage = new SiweMessage(message);
   const fields = await siweMessage.verify({signature});
-
   const address = fields.data.address;
-  // TODO: associate an address with a user if it's ok
+  const uid = request.auth.uid;
 
-  if (fields.success && fields.data.nonce === request.auth.uid && fields.data.statement === "mons ftw") {
+  const user = await admin.auth().getUser(uid);
+  const existingClaims = user.customClaims || {};
+
+  var responseAddress = address;
+  if (!existingClaims.ethAddress) {
+    existingClaims.ethAddress = address;
+    await admin.auth().setCustomUserClaims(uid, existingClaims);
+  } else {
+    responseAddress = existingClaims.ethAddress;
+  }
+
+  if (fields.success && fields.data.nonce === uid && fields.data.statement === "mons ftw") {
     return {
       ok: true,
-      address: address,
+      address: responseAddress,
     };
   } else {
     return {
