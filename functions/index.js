@@ -42,6 +42,7 @@ exports.verifyEthAddress = onCall(async (request) => {
 
     return {
       ok: true,
+      uid: uid,
       address: responseAddress,
     };
   } else {
