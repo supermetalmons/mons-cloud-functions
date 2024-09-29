@@ -16,21 +16,18 @@ exports.verifyEthAddress = onCall(async (request) => {
   const fields = await siweMessage.verify({signature});
   const address = fields.data.address;
   const uid = request.auth.uid;
+  
+  const db = admin.database();
+  const ethAddressRef = db.ref(`players/${uid}/ethAddress`);
+  const ethAddressSnapshot = await ethAddressRef.once('value');
+  const existingEthAddress = ethAddressSnapshot.val();
 
-  const user = await admin.auth().getUser(uid);
-  const existingClaims = user.customClaims || {};
-
-  var responseAddress = address;
-  if (!existingClaims.ethAddress) {
-    existingClaims.ethAddress = address;
-    await admin.auth().setCustomUserClaims(uid, existingClaims);
-    const db = admin.database();
-    const playerRef = db.ref(`players/${uid}`);
-    await playerRef.update({
-      ethAddress: address
-    });
+  let responseAddress;
+  if (existingEthAddress === null) {
+    await ethAddressRef.set(address);
+    responseAddress = address;
   } else {
-    responseAddress = existingClaims.ethAddress;
+    responseAddress = existingEthAddress;
   }
 
   if (fields.success && fields.data.nonce === uid && fields.data.statement === "mons ftw") {
