@@ -89,7 +89,10 @@ exports.attestVictory = onCall(async (request) => {
 
     // TODO: add extra data needed for tx to the response
 
+    const attester = await signer.getAddress();
+
     return {
+      attester: attester,
       signatures: signatures,
       ok: true,
     };
