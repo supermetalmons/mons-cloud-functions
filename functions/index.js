@@ -6,6 +6,15 @@ const client = new SecretManagerServiceClient();
 const admin = require("firebase-admin");
 admin.initializeApp();
 
+exports.attestVictory = onCall(async (request) => {
+  const gameId = request.data.gameId;
+  // TODO: prepare attestation tx
+  return {
+    gameId: gameId, // TODO: remove tmp mirror
+    ok: true,
+  };
+});
+
 exports.verifyEthAddress = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError(
