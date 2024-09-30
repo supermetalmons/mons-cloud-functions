@@ -18,7 +18,7 @@ exports.attestVictory = onCall(async (request) => {
     SchemaEncoder,
   } = require("@ethereum-attestation-service/eas-sdk");
 
-  const eas = new EAS(EASContractAddress);
+  const eas = new EAS("0x4200000000000000000000000000000000000021");
   const delegated = await eas.getDelegated();
   const schemaEncoder = new SchemaEncoder("uint64 gameId, uint64 points, bool isWin");
 
