@@ -8,7 +8,7 @@ admin.initializeApp();
 
 exports.attestVictory = onCall(async (request) => {
   const gameId = request.data.gameId;
-  
+
   // TODO: get actual players addresses
   const address1 = "0xE26067c76fdbe877F48b0a8400cf5Db8B47aF0fE";
   const address2 = "0xFD50b031E778fAb33DfD2Fc3Ca66a1EeF0652165";
@@ -23,10 +23,19 @@ exports.attestVictory = onCall(async (request) => {
   const provider = new ethers.JsonRpcProvider("https://mainnet.base.org");
   const signer = new ethers.Wallet(privateKey, provider);
 
-  const eas = new EAS("0x4200000000000000000000000000000000000021");
-  eas.connect(signer);
-  const delegated = await eas.getDelegated();
-  const schemaEncoder = new SchemaEncoder("uint64 gameId, uint64 points, bool isWin");
+  const options = { proxy: "0xF095fE4b23958b08D38e52d5d5674bBF0C03cbF6" }; // TODO: create proxy object properly
+
+  const eas = new EAS("0x4200000000000000000000000000000000000021", options);
+  const proxy = await eas.getEIP712Proxy();
+  if (!proxy) {
+    throw new Error("Invalid proxy");
+  }
+  eas.connect(signer); // TODO: not sure if it should go here
+  const delegated = await proxy?.getDelegated();
+
+  const schemaEncoder = new SchemaEncoder(
+    "uint64 gameId, uint64 points, bool isWin"
+  );
 
   const encodedData1 = schemaEncoder.encodeData([
     { name: "gameId", value: 0, type: "uint64" },
@@ -40,7 +49,7 @@ exports.attestVictory = onCall(async (request) => {
   ]);
 
   try {
-    const response1 = await delegated.signDelegatedAttestation(
+    const response1 = await delegated.signDelegatedProxyAttestation(
       {
         schema:
           "0xb6cdeca57cf4618b9e6f619771b9ca43febd99de294a8de229aa4938405f2efa",
@@ -49,15 +58,15 @@ exports.attestVictory = onCall(async (request) => {
         revocable: false,
         refUID:
           "0x0000000000000000000000000000000000000000000000000000000000000000",
+        value: 0n,
         data: encodedData1,
         deadline: 0n,
-        value: 0n,
       },
       signer
     );
-    const signature1 = response1.signature; 
-    
-    const response2 = await delegated.signDelegatedAttestation(
+    const signature1 = response1.signature;
+
+    const response2 = await delegated.signDelegatedProxyAttestation(
       {
         schema:
           "0xb6cdeca57cf4618b9e6f619771b9ca43febd99de294a8de229aa4938405f2efa",
@@ -66,25 +75,25 @@ exports.attestVictory = onCall(async (request) => {
         revocable: false,
         refUID:
           "0x0000000000000000000000000000000000000000000000000000000000000000",
+        value: 0n,
         data: encodedData2,
         deadline: 0n,
-        value: 0n,
       },
       signer
     );
-    const signature2 = response2.signature; 
+    const signature2 = response2.signature;
 
     const signatures = [
       {
         r: signature1.r,
         s: signature1.s,
-        v: signature1.v
+        v: signature1.v,
       },
       {
         r: signature2.r,
         s: signature2.s,
-        v: signature2.v
-      }
+        v: signature2.v,
+      },
     ];
 
     // TODO: add extra data needed for tx to the response
@@ -98,7 +107,10 @@ exports.attestVictory = onCall(async (request) => {
     };
   } catch (error) {
     console.error("Error in attestVictory:", error);
-    throw new HttpsError("internal", "An error occurred while processing the attestation.");
+    throw new HttpsError(
+      "internal",
+      "An error occurred while processing the attestation."
+    );
   }
 });
 
