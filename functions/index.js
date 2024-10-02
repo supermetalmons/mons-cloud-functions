@@ -16,6 +16,7 @@ exports.attestVictory = onCall(async (request) => {
   const {
     EAS,
     SchemaEncoder,
+    EIP712Proxy,
   } = require("@ethereum-attestation-service/eas-sdk");
 
   const { ethers } = require("ethers");
@@ -23,14 +24,15 @@ exports.attestVictory = onCall(async (request) => {
   const provider = new ethers.JsonRpcProvider("https://mainnet.base.org");
   const signer = new ethers.Wallet(privateKey, provider);
 
-  const options = { proxy: "0xF095fE4b23958b08D38e52d5d5674bBF0C03cbF6" }; // TODO: create proxy object properly
-
-  const eas = new EAS("0x4200000000000000000000000000000000000021", options);
+  const newProxy = new EIP712Proxy(
+    "0xF095fE4b23958b08D38e52d5d5674bBF0C03cbF6",
+    { signer: signer }
+  );
+  const eas = new EAS("0x4200000000000000000000000000000000000021", {
+    proxy: newProxy,
+    signer: signer,
+  });
   const proxy = await eas.getEIP712Proxy();
-  if (!proxy) {
-    throw new Error("Invalid proxy");
-  }
-  eas.connect(signer); // TODO: not sure if it should go here
   const delegated = await proxy?.getDelegated();
 
   const schemaEncoder = new SchemaEncoder(
