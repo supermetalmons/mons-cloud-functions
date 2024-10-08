@@ -25,7 +25,7 @@ exports.attestVictory = onCall(async (request) => {
   const signer = new ethers.Wallet(privateKey, provider);
 
   const newProxy = new EIP712Proxy(
-    "0x2678b56FcFBD824F0c17825F62EF1F003e894CB2",
+    "0x6D132b7cDC2b5A5F7C4DFd6C84C0A776062C58Ae",
     { signer: signer }
   );
   const eas = new EAS("0x4200000000000000000000000000000000000021", {
