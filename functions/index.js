@@ -20,7 +20,9 @@ exports.attestVictory = onCall(async (request) => {
   } = require("@ethereum-attestation-service/eas-sdk");
 
   const { ethers } = require("ethers");
-  const privateKey = ethers.Wallet.createRandom().privateKey; // TODO: get secret mons attester key
+  const secretName = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
+  const [secretVersion] = await client.accessSecretVersion({secretName});
+  const privateKey = secretVersion.payload.data.toString('utf8');
   const provider = new ethers.JsonRpcProvider("https://mainnet.base.org");
   const signer = new ethers.Wallet(privateKey, provider);
 
