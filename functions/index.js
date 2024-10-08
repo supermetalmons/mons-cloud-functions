@@ -10,8 +10,8 @@ exports.attestVictory = onCall(async (request) => {
   const gameId = request.data.gameId;
 
   // TODO: get actual players addresses
-  const address1 = "0xE26067c76fdbe877F48b0a8400cf5Db8B47aF0fE";
-  const address2 = "0xFD50b031E778fAb33DfD2Fc3Ca66a1EeF0652165";
+  const address1 = "0xE4790DD79c334e3f848904975272ec17f9F70366";
+  const address2 = "0x2bB97367fF26b701a60aedc213640C34F469cf38";
 
   const {
     EAS,
