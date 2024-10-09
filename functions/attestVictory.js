@@ -17,7 +17,7 @@ exports.attestVictory = onCall(async (request) => {
     "0xb6cdeca57cf4618b9e6f619771b9ca43febd99de294a8de229aa4938405f2efa";
 
   const uid = request.auth.uid;
-  const id = request.data.id;
+  const id = request.data.gameId;
 
   const matchRef = admin.database().ref(`players/${uid}/matches/${id}`);
   const matchSnapshot = await matchRef.once("value");
