@@ -6,6 +6,7 @@ const {
   EIP712Proxy,
 } = require("@ethereum-attestation-service/eas-sdk");
 const { ethers } = require("ethers");
+const admin = require("firebase-admin");
 
 const secretManagerServiceClient = new SecretManagerServiceClient();
 
