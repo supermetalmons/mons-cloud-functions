@@ -18,8 +18,9 @@ exports.attestVictory = onCall(async (request) => {
   const gameId = request.data.gameId;
 
   // TODO: get actual players addresses
-  const address1 = "0xE4790DD79c334e3f848904975272ec17f9F70366";
-  const address2 = "0x2bB97367fF26b701a60aedc213640C34F469cf38";
+
+  const recipient1 = "0xE4790DD79c334e3f848904975272ec17f9F70366";
+  const recipient2 = "0x2bB97367fF26b701a60aedc213640C34F469cf38";
 
   const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
   const [version] = await secretManagerServiceClient.accessSecretVersion({
@@ -41,6 +42,7 @@ exports.attestVictory = onCall(async (request) => {
     "uint64 gameId, uint64 points, bool isWin"
   );
 
+  // TODO: get actual game results, calculate actual updated elo
   const encodedData1 = schemaEncoder.encodeData([
     { name: "gameId", value: 0, type: "uint64" },
     { name: "points", value: 1000, type: "uint64" },
@@ -54,15 +56,15 @@ exports.attestVictory = onCall(async (request) => {
 
   // TODO: make sure refUIDs are fresh
   const refUID1 =
-    "0xfe2f9917cb74a7174ef23552095a29396ed14753f5cdd5768f78ed3fb81dd89c";
+    "0x527faa6f5f4753e12600ef9d2ea220bd9100550b987a939ef70375232263e8d2";
   const refUID2 =
-    "0xfe2f9917cb74a7174ef23552095a29396ed14753f5cdd5768f78ed3fb81dd89c";
+    "0x527faa6f5f4753e12600ef9d2ea220bd9100550b987a939ef70375232263e8d2";
 
   try {
     const response1 = await delegated.signDelegatedProxyAttestation(
       {
         schema: schema,
-        recipient: address1,
+        recipient: recipient1,
         expirationTime: 0n,
         revocable: false,
         refUID: refUID1,
@@ -77,7 +79,7 @@ exports.attestVictory = onCall(async (request) => {
     const response2 = await delegated.signDelegatedProxyAttestation(
       {
         schema: schema,
-        recipient: address2,
+        recipient: recipient2,
         expirationTime: 0n,
         revocable: false,
         refUID: refUID2,
@@ -102,8 +104,6 @@ exports.attestVictory = onCall(async (request) => {
       },
     ];
 
-    // TODO: add extra data needed for tx to the response
-
     const attester = await signer.getAddress();
 
     return {
@@ -111,6 +111,12 @@ exports.attestVictory = onCall(async (request) => {
       proxyAddress: proxyAddress,
       schema: schema,
       attester: attester,
+      recipient1: recipient1,
+      recipient2: recipient2,
+      refUID1: refUID1,
+      refUID2: refUID2,
+      encodedData1: encodedData1,
+      encodedData2: encodedData2,
       signatures: signatures,
       ok: true,
     };
