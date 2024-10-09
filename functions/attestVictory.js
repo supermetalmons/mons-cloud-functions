@@ -15,7 +15,72 @@ exports.attestVictory = onCall(async (request) => {
   const schema =
     "0xb6cdeca57cf4618b9e6f619771b9ca43febd99de294a8de229aa4938405f2efa";
 
-  const gameId = request.data.gameId;
+  const uid = request.auth.uid;
+  const id = request.data.id;
+
+  const matchRef = admin.database().ref(`players/${uid}/matches/${id}`);
+  const matchSnapshot = await matchRef.once("value");
+  const matchData = matchSnapshot.val();
+
+  const inviteRef = admin.database().ref(`invites/${id}`);
+  const inviteSnapshot = await inviteRef.once("value");
+  const inviteData = inviteSnapshot.val();
+
+  const opponentId =
+    inviteData.guestId === uid ? inviteData.hostId : inviteData.guestId;
+
+  const opponentMatchRef = admin
+    .database()
+    .ref(`players/${opponentId}/matches/${id}`);
+  const opponentMatchSnapshot = await opponentMatchRef.once("value");
+  const opponentMatchData = opponentMatchSnapshot.val();
+
+  var result = "none"; // gg / win / none / draw
+  if (matchData.status == "surrendered") {
+    result = "gg";
+  } else if (opponentMatchData.status == "surrendered") {
+    result = "win";
+  } else {
+    const color = matchData.color;
+    const opponentColor = opponentMatchData.color;
+    const mons = await import("mons-rust");
+    var winnerColorFen = "";
+    if (color == "white") {
+      winnerColorFen = mons.winner(
+        matchData.fen,
+        opponentMatchData.fen,
+        matchData.flatMovesString,
+        opponentMatchData.flatMovesString
+      );
+    } else {
+      winnerColorFen = mons.winner(
+        opponentMatchData.fen,
+        matchData.fen,
+        opponentMatchData.flatMovesString,
+        matchData.flatMovesString
+      );
+    }
+    if (winnerColorFen != "") {
+      // TODO: handle "x" response — or stop responding with "x" from mons-rust
+
+      var winnerColor = "none";
+      if (winnerColorFen == "w") {
+        winnerColor = "white";
+      } else if (winnerColorFen == "b") {
+        winnerColor = "black";
+      }
+
+      if (winnerColor == color) {
+        result = "win";
+      } else if (winnerColor == opponentColor) {
+        result = "gg";
+      }
+    }
+  }
+
+  if (result !== "win") {
+    throw new HttpsError("internal", "Cound not confirm victory.");
+  }
 
   // TODO: get actual players addresses
 
