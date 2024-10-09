@@ -10,6 +10,11 @@ const { ethers } = require("ethers");
 const secretManagerServiceClient = new SecretManagerServiceClient();
 
 exports.attestVictory = onCall(async (request) => {
+  const easAddress = "0x4200000000000000000000000000000000000021";
+  const proxyAddress = "0x6D132b7cDC2b5A5F7C4DFd6C84C0A776062C58Ae";
+  const schema =
+    "0xb6cdeca57cf4618b9e6f619771b9ca43febd99de294a8de229aa4938405f2efa";
+
   const gameId = request.data.gameId;
 
   // TODO: get actual players addresses
@@ -24,11 +29,8 @@ exports.attestVictory = onCall(async (request) => {
   const provider = new ethers.JsonRpcProvider("https://mainnet.base.org");
   const signer = new ethers.Wallet(privateKey, provider);
 
-  const newProxy = new EIP712Proxy(
-    "0x6D132b7cDC2b5A5F7C4DFd6C84C0A776062C58Ae",
-    { signer: signer }
-  );
-  const eas = new EAS("0x4200000000000000000000000000000000000021", {
+  const newProxy = new EIP712Proxy(proxyAddress, { signer: signer });
+  const eas = new EAS(easAddress, {
     proxy: newProxy,
     signer: signer,
   });
@@ -51,17 +53,19 @@ exports.attestVictory = onCall(async (request) => {
   ]);
 
   // TODO: make sure refUIDs are fresh
+  const refUID1 =
+    "0xfe2f9917cb74a7174ef23552095a29396ed14753f5cdd5768f78ed3fb81dd89c";
+  const refUID2 =
+    "0xfe2f9917cb74a7174ef23552095a29396ed14753f5cdd5768f78ed3fb81dd89c";
 
   try {
     const response1 = await delegated.signDelegatedProxyAttestation(
       {
-        schema:
-          "0xb6cdeca57cf4618b9e6f619771b9ca43febd99de294a8de229aa4938405f2efa",
+        schema: schema,
         recipient: address1,
         expirationTime: 0n,
         revocable: false,
-        refUID:
-          "0x4639fc1459b4c2ce1d87599b9be52173bd2700e56704838b131cb7c480562cf3",
+        refUID: refUID1,
         value: 0n,
         data: encodedData1,
         deadline: 0n,
@@ -72,13 +76,11 @@ exports.attestVictory = onCall(async (request) => {
 
     const response2 = await delegated.signDelegatedProxyAttestation(
       {
-        schema:
-          "0xb6cdeca57cf4618b9e6f619771b9ca43febd99de294a8de229aa4938405f2efa",
+        schema: schema,
         recipient: address2,
         expirationTime: 0n,
         revocable: false,
-        refUID:
-          "0x4639fc1459b4c2ce1d87599b9be52173bd2700e56704838b131cb7c480562cf3",
+        refUID: refUID2,
         value: 0n,
         data: encodedData2,
         deadline: 0n,
@@ -105,6 +107,9 @@ exports.attestVictory = onCall(async (request) => {
     const attester = await signer.getAddress();
 
     return {
+      easAddress: easAddress,
+      proxyAddress: proxyAddress,
+      schema: schema,
       attester: attester,
       signatures: signatures,
       ok: true,
