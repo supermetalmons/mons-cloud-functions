@@ -52,6 +52,8 @@ exports.attestVictory = onCall(async (request) => {
     { name: "isWin", value: false, type: "bool" },
   ]);
 
+  // TODO: make sure refUIDs are fresh
+
   try {
     const response1 = await delegated.signDelegatedProxyAttestation(
       {
@@ -61,7 +63,7 @@ exports.attestVictory = onCall(async (request) => {
         expirationTime: 0n,
         revocable: false,
         refUID:
-          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x90c4567ef07bd1b837fbf0c6d0c7006bebda90e2fa5b32f72d79b121eabec961",
         value: 0n,
         data: encodedData1,
         deadline: 0n,
@@ -78,7 +80,7 @@ exports.attestVictory = onCall(async (request) => {
         expirationTime: 0n,
         revocable: false,
         refUID:
-          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0x90c4567ef07bd1b837fbf0c6d0c7006bebda90e2fa5b32f72d79b121eabec961",
         value: 0n,
         data: encodedData2,
         deadline: 0n,
