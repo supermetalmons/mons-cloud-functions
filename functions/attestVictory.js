@@ -153,7 +153,10 @@ exports.attestVictory = onCall(async (request) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ easQuery }),
+    body: JSON.stringify({
+      query: easQuery,
+      variables: {}
+    }),
   });
 
   if (!easResponse.ok) {
