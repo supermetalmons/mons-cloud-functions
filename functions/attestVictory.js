@@ -52,7 +52,7 @@ exports.attestVictory = onCall(async (request) => {
     throw new HttpsError("failed-precondition", "Opponent's Ethereum address not found.");
   }
 
-  var result = "none"; // gg / win / none / draw
+  var result = "none";
   if (matchData.status == "surrendered") {
     result = "gg";
   } else if (opponentMatchData.status == "surrendered") {
@@ -78,8 +78,10 @@ exports.attestVictory = onCall(async (request) => {
       );
     }
     if (winnerColorFen != "") {
-      // TODO: handle "x" response — or stop responding with "x" from mons-rust
-
+      if (winnerColorFen === "x") {
+        // TODO: explore corrupted game data to see if there was cheating
+      }
+      
       var winnerColor = "none";
       if (winnerColorFen == "w") {
         winnerColor = "white";
