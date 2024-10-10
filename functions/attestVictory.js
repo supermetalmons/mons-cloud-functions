@@ -200,7 +200,7 @@ exports.attestVictory = onCall(async (request) => {
     { name: "rating", value: newElo2, type: "uint32" },
   ]);
 
-  const deadline = BigInt(Math.floor(Date.now() / 1000) + 60);
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 123);
 
   try {
     const response1 = await delegated.signDelegatedProxyAttestation(
