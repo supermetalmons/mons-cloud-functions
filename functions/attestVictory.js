@@ -200,8 +200,7 @@ exports.attestVictory = onCall(async (request) => {
     { name: "rating", value: newElo2, type: "uint32" },
   ]);
 
-  // TODO: tune deadline – make it enough for tx to go through while preventing old attestations being sent too late
-  const deadline = 0n; // Unix timestamp of when signature expires (0 for no expiration)
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 60);
 
   try {
     const response1 = await delegated.signDelegatedProxyAttestation(
@@ -261,6 +260,7 @@ exports.attestVictory = onCall(async (request) => {
       encodedData1: encodedData1,
       encodedData2: encodedData2,
       signatures: signatures,
+      deadline: deadline.toString(),
       ok: true,
     };
   } catch (error) {
