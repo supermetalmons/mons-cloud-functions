@@ -172,6 +172,9 @@ exports.attestVictory = onCall(async (request) => {
   const refUID2 =
     "0x0000000000000000000000000000000000000000000000000000000000000000";
 
+  // TODO: tune deadline – make it enough for tx to go through while preventing old attestations being sent too late
+  const deadline = 0n; // Unix timestamp of when signature expires (0 for no expiration)
+
   try {
     const response1 = await delegated.signDelegatedProxyAttestation(
       {
@@ -182,7 +185,7 @@ exports.attestVictory = onCall(async (request) => {
         refUID: refUID1,
         value: 0n,
         data: encodedData1,
-        deadline: 0n,
+        deadline: deadline,
       },
       signer
     );
@@ -197,7 +200,7 @@ exports.attestVictory = onCall(async (request) => {
         refUID: refUID2,
         value: 0n,
         data: encodedData2,
-        deadline: 0n,
+        deadline: deadline,
       },
       signer
     );
