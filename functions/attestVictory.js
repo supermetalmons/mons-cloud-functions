@@ -113,17 +113,32 @@ exports.attestVictory = onCall(async (request) => {
   const recipient2 = opponentEthAddress;
 
   const graph = "https://base.easscan.org/graphql";
-  const recipientForQuery = recipient1; // TODO: get for both of them
   const query = `
     query Attestation {
-      attestations(
+      firstRecipientAttestations: attestations(
         take: 20,
         skip: 0,
-        orderBy: { timeCreated: desc },
+        orderBy: { time: desc },
         where: { 
           schemaId: { equals: "${schema}" }, 
           attester: { equals: "${proxyAddress}" },
-          recipient: { equals: "${recipientForQuery}" },
+          recipient: { equals: "${recipient1}" },
+          revoked: { equals: false },
+        },
+      ) {
+        decodedDataJson
+        refUID
+        id
+      }
+
+      secondRecipientAttestations: attestations(
+        take: 20,
+        skip: 0,
+        orderBy: { time: desc },
+        where: { 
+          schemaId: { equals: "${schema}" }, 
+          attester: { equals: "${proxyAddress}" },
+          recipient: { equals: "${recipient2}" },
           revoked: { equals: false },
         },
       ) {
