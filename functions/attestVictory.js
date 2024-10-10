@@ -13,8 +13,7 @@ const secretManagerServiceClient = new SecretManagerServiceClient();
 exports.attestVictory = onCall(async (request) => {
   const easAddress = "0x4200000000000000000000000000000000000021";
   const proxyAddress = "0x6D132b7cDC2b5A5F7C4DFd6C84C0A776062C58Ae";
-  const schema =
-    "0xb6cdeca57cf4618b9e6f619771b9ca43febd99de294a8de229aa4938405f2efa";
+  const schema = "0x2122d73748ef86912b527d498cf89d2a41980b4d2cd75597ff1fa5b4cb31b9a0";
 
   const uid = request.auth.uid;
   const id = request.data.gameId;
@@ -171,8 +170,8 @@ exports.attestVictory = onCall(async (request) => {
   const refUID2 = targetAttestation2 ? targetAttestation2.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
 
   // TODO: use initial value from response to calculate an updated elo
-  const newElo1 = 1001;
-  const newElo2 = 999;
+  const newElo1 = 1000;
+  const newElo2 = 1000;
 
   const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
   const [version] = await secretManagerServiceClient.accessSecretVersion({
@@ -191,18 +190,14 @@ exports.attestVictory = onCall(async (request) => {
   const delegated = await proxy?.getDelegated();
 
   const schemaEncoder = new SchemaEncoder(
-    "uint64 gameId, uint64 points, bool isWin"
+    "uint32 rating"
   );
 
   const encodedData1 = schemaEncoder.encodeData([
-    { name: "gameId", value: 0, type: "uint64" },
-    { name: "points", value: newElo1, type: "uint64" },
-    { name: "isWin", value: true, type: "bool" },
+    { name: "rating", value: newElo1, type: "uint32" },
   ]);
   const encodedData2 = schemaEncoder.encodeData([
-    { name: "gameId", value: 0, type: "uint64" },
-    { name: "points", value: newElo2, type: "uint64" },
-    { name: "isWin", value: false, type: "bool" },
+    { name: "rating", value: newElo2, type: "uint32" },
   ]);
 
   // TODO: tune deadline – make it enough for tx to go through while preventing old attestations being sent too late
