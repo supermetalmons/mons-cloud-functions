@@ -36,6 +36,22 @@ exports.attestVictory = onCall(async (request) => {
   const opponentMatchSnapshot = await opponentMatchRef.once("value");
   const opponentMatchData = opponentMatchSnapshot.val();
 
+  const playerEthAddressRef = admin.database().ref(`players/${uid}/ethAddress`);
+  const playerEthAddressSnapshot = await playerEthAddressRef.once("value");
+  const playerEthAddress = playerEthAddressSnapshot.val();
+
+  if (!playerEthAddress) {
+    throw new HttpsError("failed-precondition", "Player's Ethereum address not found.");
+  }
+
+  const opponentEthAddressRef = admin.database().ref(`players/${opponentId}/ethAddress`);
+  const opponentEthAddressSnapshot = await opponentEthAddressRef.once("value");
+  const opponentEthAddress = opponentEthAddressSnapshot.val();
+
+  if (!opponentEthAddress) {
+    throw new HttpsError("failed-precondition", "Opponent's Ethereum address not found.");
+  }
+
   var result = "none"; // gg / win / none / draw
   if (matchData.status == "surrendered") {
     result = "gg";
@@ -83,10 +99,8 @@ exports.attestVictory = onCall(async (request) => {
     throw new HttpsError("internal", "Cound not confirm victory.");
   }
 
-  // TODO: get actual players addresses
-
-  const recipient1 = "0xE4790DD79c334e3f848904975272ec17f9F70366";
-  const recipient2 = "0x2bB97367fF26b701a60aedc213640C34F469cf38";
+  const recipient1 = playerEthAddress;
+  const recipient2 = opponentEthAddress;
 
   const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
   const [version] = await secretManagerServiceClient.accessSecretVersion({
@@ -111,20 +125,20 @@ exports.attestVictory = onCall(async (request) => {
   // TODO: get actual game results, calculate actual updated elo
   const encodedData1 = schemaEncoder.encodeData([
     { name: "gameId", value: 0, type: "uint64" },
-    { name: "points", value: 1000, type: "uint64" },
+    { name: "points", value: 1001, type: "uint64" },
     { name: "isWin", value: true, type: "bool" },
   ]);
   const encodedData2 = schemaEncoder.encodeData([
     { name: "gameId", value: 0, type: "uint64" },
-    { name: "points", value: 1000, type: "uint64" },
+    { name: "points", value: 999, type: "uint64" },
     { name: "isWin", value: false, type: "bool" },
   ]);
 
   // TODO: make sure refUIDs are fresh
   const refUID1 =
-    "0x527faa6f5f4753e12600ef9d2ea220bd9100550b987a939ef70375232263e8d2";
+    "0x0000000000000000000000000000000000000000000000000000000000000000";
   const refUID2 =
-    "0x527faa6f5f4753e12600ef9d2ea220bd9100550b987a939ef70375232263e8d2";
+    "0x0000000000000000000000000000000000000000000000000000000000000000";
 
   try {
     const response1 = await delegated.signDelegatedProxyAttestation(
