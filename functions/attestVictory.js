@@ -112,11 +112,10 @@ exports.attestVictory = onCall(async (request) => {
   const recipient1 = playerEthAddress;
   const recipient2 = opponentEthAddress;
 
-  const graph = "https://base.easscan.org/graphql";
-  const query = `
+  const easQuery = `
     query Attestation {
       firstRecipientAttestations: attestations(
-        take: 20,
+        take: 10,
         skip: 0,
         orderBy: { time: desc },
         where: { 
@@ -132,7 +131,7 @@ exports.attestVictory = onCall(async (request) => {
       }
 
       secondRecipientAttestations: attestations(
-        take: 20,
+        take: 10,
         skip: 0,
         orderBy: { time: desc },
         where: { 
@@ -148,6 +147,29 @@ exports.attestVictory = onCall(async (request) => {
       }
     }
   `;
+
+  const easResponse = await fetch("https://base.easscan.org/graphql", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ easQuery }),
+  });
+
+  if (!easResponse.ok) {
+    throw new HttpsError('internal', 'Failed to fetch attestations');
+  }
+
+  const easResponseJson = await easResponse.json();
+  const targetAttestation1 = easResponseJson.data.firstRecipientAttestations[0] || null;
+  const targetAttestation2 = easResponseJson.data.secondRecipientAttestations[0] || null;
+
+  const refUID1 = targetAttestation1 ? targetAttestation1.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
+  const refUID2 = targetAttestation2 ? targetAttestation2.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+  // TODO: use initial value from response to calculate an updated elo
+  const newElo1 = 1001;
+  const newElo2 = 999;
 
   const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
   const [version] = await secretManagerServiceClient.accessSecretVersion({
@@ -169,23 +191,16 @@ exports.attestVictory = onCall(async (request) => {
     "uint64 gameId, uint64 points, bool isWin"
   );
 
-  // TODO: get actual game results, calculate actual updated elo
   const encodedData1 = schemaEncoder.encodeData([
     { name: "gameId", value: 0, type: "uint64" },
-    { name: "points", value: 1001, type: "uint64" },
+    { name: "points", value: newElo1, type: "uint64" },
     { name: "isWin", value: true, type: "bool" },
   ]);
   const encodedData2 = schemaEncoder.encodeData([
     { name: "gameId", value: 0, type: "uint64" },
-    { name: "points", value: 999, type: "uint64" },
+    { name: "points", value: newElo2, type: "uint64" },
     { name: "isWin", value: false, type: "bool" },
   ]);
-
-  // TODO: make sure refUIDs are fresh
-  const refUID1 =
-    "0x0000000000000000000000000000000000000000000000000000000000000000";
-  const refUID2 =
-    "0x0000000000000000000000000000000000000000000000000000000000000000";
 
   // TODO: tune deadline – make it enough for tx to go through while preventing old attestations being sent too late
   const deadline = 0n; // Unix timestamp of when signature expires (0 for no expiration)
