@@ -41,15 +41,23 @@ exports.attestVictory = onCall(async (request) => {
   const playerEthAddress = playerEthAddressSnapshot.val();
 
   if (!playerEthAddress) {
-    throw new HttpsError("failed-precondition", "Player's Ethereum address not found.");
+    throw new HttpsError(
+      "failed-precondition",
+      "Player's Ethereum address not found."
+    );
   }
 
-  const opponentEthAddressRef = admin.database().ref(`players/${opponentId}/ethAddress`);
+  const opponentEthAddressRef = admin
+    .database()
+    .ref(`players/${opponentId}/ethAddress`);
   const opponentEthAddressSnapshot = await opponentEthAddressRef.once("value");
   const opponentEthAddress = opponentEthAddressSnapshot.val();
 
   if (!opponentEthAddress) {
-    throw new HttpsError("failed-precondition", "Opponent's Ethereum address not found.");
+    throw new HttpsError(
+      "failed-precondition",
+      "Opponent's Ethereum address not found."
+    );
   }
 
   var result = "none";
@@ -81,7 +89,7 @@ exports.attestVictory = onCall(async (request) => {
       if (winnerColorFen === "x") {
         // TODO: explore corrupted game data to see if there was cheating
       }
-      
+
       var winnerColor = "none";
       if (winnerColorFen == "w") {
         winnerColor = "white";
@@ -103,6 +111,28 @@ exports.attestVictory = onCall(async (request) => {
 
   const recipient1 = playerEthAddress;
   const recipient2 = opponentEthAddress;
+
+  const graph = "https://base.easscan.org/graphql";
+  const recipientForQuery = recipient1; // TODO: get for both of them
+  const query = `
+    query Attestation {
+      attestations(
+        take: 20,
+        skip: 0,
+        orderBy: { timeCreated: desc },
+        where: { 
+          schemaId: { equals: "${schema}" }, 
+          attester: { equals: "${proxyAddress}" },
+          recipient: { equals: "${recipientForQuery}" },
+          revoked: { equals: false },
+        },
+      ) {
+        decodedDataJson
+        refUID
+        id
+      }
+    }
+  `;
 
   const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
   const [version] = await secretManagerServiceClient.accessSecretVersion({
