@@ -13,8 +13,7 @@ const secretManagerServiceClient = new SecretManagerServiceClient();
 exports.attestVictory = onCall(async (request) => {
   const easAddress = "0x4200000000000000000000000000000000000021";
 
-  // const proxyAddress = "0x6D132b7cDC2b5A5F7C4DFd6C84C0A776062C58Ae"; // supermetalmons.eth proxy
-  const proxyAddress = "0xF095fE4b23958b08D38e52d5d5674bBF0C03cbF6"; // TODO: dev tmp public proxy
+  const proxyAddress = "0x6D132b7cDC2b5A5F7C4DFd6C84C0A776062C58Ae";
   const schema = "0x5c6e798cbb817442fa075e01b65d5d65d3ac35c2b05c1306e8771a1c8a3adb32";
 
   const uid = request.auth.uid;
