@@ -171,9 +171,23 @@ exports.attestVictory = onCall(async (request) => {
   const refUID1 = targetAttestation1 ? targetAttestation1.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
   const refUID2 = targetAttestation2 ? targetAttestation2.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-  // TODO: set nonce values based on previous attestations
-  const nonce1 = 0;
-  const nonce2 = 0;
+  let nonce1 = 0;
+  if (targetAttestation1) {
+    const nonceItem = JSON.parse(targetAttestation1.decodedDataJson).find(item => item.name === "nonce");
+    if (!nonceItem || typeof nonceItem.value.value !== 'number') {
+      throw new HttpsError('internal', 'Invalid nonce value in previous attestation');
+    }
+    nonce1 = nonceItem.value.value + 1;
+  }
+  
+  let nonce2 = 0;
+  if (targetAttestation2) {
+    const nonceItem = JSON.parse(targetAttestation2.decodedDataJson).find(item => item.name === "nonce");
+    if (!nonceItem || typeof nonceItem.value.value !== 'number') {
+      throw new HttpsError('internal', 'Invalid nonce value in previous attestation');
+    }
+    nonce2 = nonceItem.value.value + 1;
+  }
 
   // TODO: use initial value from response to calculate an updated elo
   const newElo1 = 1000;
