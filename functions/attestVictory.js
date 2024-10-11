@@ -136,6 +136,8 @@ exports.attestVictory = onCall(async (request) => {
     nonce2 = nonceItem.value.value + 1;
   }
 
+  // TODO: store these nonces corresponding for the gameId – preventing that game getting reattested
+
   let elo1 = 1500;
   if (targetAttestation1) {
     const ratingItem = JSON.parse(targetAttestation1.decodedDataJson).find(item => item.name === "newRating");
