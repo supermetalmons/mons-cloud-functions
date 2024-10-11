@@ -191,7 +191,7 @@ exports.attestVictory = onCall(async (request) => {
 
   let elo1 = 1000;
   if (targetAttestation1) {
-    const ratingItem = JSON.parse(targetAttestation1.decodedDataJson).find(item => item.name === "rating");
+    const ratingItem = JSON.parse(targetAttestation1.decodedDataJson).find(item => item.name === "newRating");
     if (!ratingItem || typeof ratingItem.value.value !== 'number') {
       throw new HttpsError('internal', 'Invalid rating value in previous attestation');
     }
@@ -200,7 +200,7 @@ exports.attestVictory = onCall(async (request) => {
   
   let elo2 = 1000;
   if (targetAttestation2) {
-    const ratingItem = JSON.parse(targetAttestation2.decodedDataJson).find(item => item.name === "rating");
+    const ratingItem = JSON.parse(targetAttestation2.decodedDataJson).find(item => item.name === "newRating");
     if (!ratingItem || typeof ratingItem.value.value !== 'number') {
       throw new HttpsError('internal', 'Invalid rating value in previous attestation');
     }
