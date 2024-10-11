@@ -12,8 +12,10 @@ const secretManagerServiceClient = new SecretManagerServiceClient();
 
 exports.attestVictory = onCall(async (request) => {
   const easAddress = "0x4200000000000000000000000000000000000021";
-  const proxyAddress = "0x6D132b7cDC2b5A5F7C4DFd6C84C0A776062C58Ae";
-  const schema = "0x2122d73748ef86912b527d498cf89d2a41980b4d2cd75597ff1fa5b4cb31b9a0";
+
+  // const proxyAddress = "0x6D132b7cDC2b5A5F7C4DFd6C84C0A776062C58Ae"; // supermetalmons.eth proxy
+  const proxyAddress = "0xF095fE4b23958b08D38e52d5d5674bBF0C03cbF6"; // TODO: dev tmp public proxy
+  const schema = "0x5c6e798cbb817442fa075e01b65d5d65d3ac35c2b05c1306e8771a1c8a3adb32";
 
   const uid = request.auth.uid;
   const id = request.data.gameId;
@@ -111,6 +113,7 @@ exports.attestVictory = onCall(async (request) => {
   const recipient1 = playerEthAddress;
   const recipient2 = opponentEthAddress;
 
+  // TODO: query top nonces
   const easQuery = `
     query Attestation {
       firstRecipientAttestations: attestations(
@@ -169,6 +172,10 @@ exports.attestVictory = onCall(async (request) => {
   const refUID1 = targetAttestation1 ? targetAttestation1.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
   const refUID2 = targetAttestation2 ? targetAttestation2.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
 
+  // TODO: set nonce values based on previous attestations
+  const nonce1 = 0;
+  const nonce2 = 0;
+
   // TODO: use initial value from response to calculate an updated elo
   const newElo1 = 1000;
   const newElo2 = 1000;
@@ -190,14 +197,18 @@ exports.attestVictory = onCall(async (request) => {
   const delegated = await proxy?.getDelegated();
 
   const schemaEncoder = new SchemaEncoder(
-    "uint32 rating"
+    "uint32 nonce, uint16 newRating, bool win"
   );
 
   const encodedData1 = schemaEncoder.encodeData([
-    { name: "rating", value: newElo1, type: "uint32" },
+    { name: "nonce", value: nonce1, type: "uint32" },
+    { name: "newRating", value: newElo1, type: "uint16" },
+    { name: "win", value: true, type: "bool" },
   ]);
   const encodedData2 = schemaEncoder.encodeData([
-    { name: "rating", value: newElo2, type: "uint32" },
+    { name: "nonce", value: nonce2, type: "uint32" },
+    { name: "newRating", value: newElo2, type: "uint16" },
+    { name: "win", value: false, type: "bool" },
   ]);
 
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 123);
