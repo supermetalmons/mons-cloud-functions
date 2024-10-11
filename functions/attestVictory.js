@@ -328,8 +328,8 @@ const updateRating = (winRating, winPlayerGamesCount, lossRating, lossPlayerGame
   const matches = [[winner, loser, 1]];
   ranking.updateRatings(matches);
 
-  const newWinRating = winner.getRating();
-  const newLossRating = loser.getRating();
+  const newWinRating = Math.round(winner.getRating());
+  const newLossRating = Math.round(loser.getRating());
 
   return [newWinRating, newLossRating];
 };
