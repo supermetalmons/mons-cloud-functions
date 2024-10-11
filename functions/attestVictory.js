@@ -331,6 +331,9 @@ const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient
   }
 
   // TODO: if there are repeated max nonces, make an extra request finding the earliest attestation with the max nonce
+  // data for nonce 6: 0x000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000004640000000000000000000000000000000000000000000000000000000000000001
+  // data for nonce 5: 0x000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000003770000000000000000000000000000000000000000000000000000000000000000
+  // TODO: if nonces are equal, get attestations with data prefix corresponding to that nonce, orderBy: { time: asc }
 
   const easResponseJson = await easResponse.json();
   const targetAttestation1 = easResponseJson.data.firstRecipientAttestations[0] || null;
