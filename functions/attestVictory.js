@@ -189,9 +189,25 @@ exports.attestVictory = onCall(async (request) => {
     nonce2 = nonceItem.value.value + 1;
   }
 
-  // TODO: use initial value from response to calculate an updated elo
-  const newElo1 = 1000;
-  const newElo2 = 1000;
+  let elo1 = 1000;
+  if (targetAttestation1) {
+    const ratingItem = JSON.parse(targetAttestation1.decodedDataJson).find(item => item.name === "rating");
+    if (!ratingItem || typeof ratingItem.value.value !== 'number') {
+      throw new HttpsError('internal', 'Invalid rating value in previous attestation');
+    }
+    elo1 = ratingItem.value.value;
+  }
+  
+  let elo2 = 1000;
+  if (targetAttestation2) {
+    const ratingItem = JSON.parse(targetAttestation2.decodedDataJson).find(item => item.name === "rating");
+    if (!ratingItem || typeof ratingItem.value.value !== 'number') {
+      throw new HttpsError('internal', 'Invalid rating value in previous attestation');
+    }
+    elo2 = ratingItem.value.value;
+  }
+
+  const [newElo1, newElo2] = updateRating(elo1, nonce1, elo2, nonce2);
 
   const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
   const [version] = await secretManagerServiceClient.accessSecretVersion({
@@ -295,3 +311,14 @@ exports.attestVictory = onCall(async (request) => {
     );
   }
 });
+
+const updateRating = (winRating, winPlayerGamesCount, lossRating, lossPlayerGamesCount) => {
+  console.log("update rating input", winRating, winPlayerGamesCount, lossRating, lossPlayerGamesCount);
+
+  // TODO: implement rating update
+
+  const newWinRating = winRating;
+  const newLossRating = lossRating;
+
+  return [newWinRating, newLossRating];
+};
