@@ -18,6 +18,7 @@
     "ethers": "^6.13.2",
     "firebase-admin": "^12.1.0",
     "firebase-functions": "^4.9.0",
+    "glicko2": "^1.2.1",
     "mons-rust": "^0.1.5",
     "siwe": "^2.3.2"
   },

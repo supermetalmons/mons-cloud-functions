@@ -6,6 +6,7 @@ const {
   EIP712Proxy,
 } = require("@ethereum-attestation-service/eas-sdk");
 const { ethers } = require("ethers");
+const glicko2 = require('glicko2');
 const admin = require("firebase-admin");
 
 const secretManagerServiceClient = new SecretManagerServiceClient();
@@ -189,7 +190,7 @@ exports.attestVictory = onCall(async (request) => {
     nonce2 = nonceItem.value.value + 1;
   }
 
-  let elo1 = 1000;
+  let elo1 = 1500;
   if (targetAttestation1) {
     const ratingItem = JSON.parse(targetAttestation1.decodedDataJson).find(item => item.name === "newRating");
     if (!ratingItem || typeof ratingItem.value.value !== 'number') {
@@ -198,7 +199,7 @@ exports.attestVictory = onCall(async (request) => {
     elo1 = ratingItem.value.value;
   }
   
-  let elo2 = 1000;
+  let elo2 = 1500;
   if (targetAttestation2) {
     const ratingItem = JSON.parse(targetAttestation2.decodedDataJson).find(item => item.name === "newRating");
     if (!ratingItem || typeof ratingItem.value.value !== 'number') {
@@ -313,12 +314,22 @@ exports.attestVictory = onCall(async (request) => {
 });
 
 const updateRating = (winRating, winPlayerGamesCount, lossRating, lossPlayerGamesCount) => {
-  console.log("update rating input", winRating, winPlayerGamesCount, lossRating, lossPlayerGamesCount);
+  const settings = {
+    tau: 0.75,
+    rating: 1500,
+    rd: 100,
+    vol: 0.06
+  };
 
-  // TODO: implement rating update
+  const ranking = new glicko2.Glicko2(settings);
+  const adjustRd = (gamesCount) => Math.max(60, 350 - gamesCount);
+  const winner = ranking.makePlayer(winRating, adjustRd(winPlayerGamesCount), 0.06);
+  const loser = ranking.makePlayer(lossRating, adjustRd(lossPlayerGamesCount), 0.06);
+  const matches = [[winner, loser, 1]];
+  ranking.updateRatings(matches);
 
-  const newWinRating = winRating;
-  const newLossRating = lossRating;
+  const newWinRating = winner.getRating();
+  const newLossRating = loser.getRating();
 
   return [newWinRating, newLossRating];
 };
