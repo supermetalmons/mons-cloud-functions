@@ -113,7 +113,7 @@ exports.attestVictory = onCall(async (request) => {
   const recipient1 = playerEthAddress;
   const recipient2 = opponentEthAddress;
 
-  const [targetAttestation1, targetAttestation2] = getLatestAttestations(schema, proxyAddress, recipient1, recipient2);
+  const [targetAttestation1, targetAttestation2] = await getLatestAttestations(schema, proxyAddress, recipient1, recipient2);
 
   const refUID1 = targetAttestation1 ? targetAttestation1.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
   const refUID2 = targetAttestation2 ? targetAttestation2.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
