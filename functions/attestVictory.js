@@ -113,61 +113,7 @@ exports.attestVictory = onCall(async (request) => {
   const recipient1 = playerEthAddress;
   const recipient2 = opponentEthAddress;
 
-  // TODO: query top nonces
-  const easQuery = `
-    query Attestation {
-      firstRecipientAttestations: attestations(
-        take: 10,
-        skip: 0,
-        orderBy: { time: desc },
-        where: { 
-          schemaId: { equals: "${schema}" }, 
-          attester: { equals: "${proxyAddress}" },
-          recipient: { equals: "${recipient1}" },
-          revoked: { equals: false },
-        },
-      ) {
-        decodedDataJson
-        refUID
-        id
-      }
-
-      secondRecipientAttestations: attestations(
-        take: 10,
-        skip: 0,
-        orderBy: { time: desc },
-        where: { 
-          schemaId: { equals: "${schema}" }, 
-          attester: { equals: "${proxyAddress}" },
-          recipient: { equals: "${recipient2}" },
-          revoked: { equals: false },
-        },
-      ) {
-        decodedDataJson
-        refUID
-        id
-      }
-    }
-  `;
-
-  const easResponse = await fetch("https://base.easscan.org/graphql", {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      query: easQuery,
-      variables: {}
-    }),
-  });
-
-  if (!easResponse.ok) {
-    throw new HttpsError('internal', 'Failed to fetch attestations');
-  }
-
-  const easResponseJson = await easResponse.json();
-  const targetAttestation1 = easResponseJson.data.firstRecipientAttestations[0] || null;
-  const targetAttestation2 = easResponseJson.data.secondRecipientAttestations[0] || null;
+  const [targetAttestation1, targetAttestation2] = getLatestAttestations(schema, proxyAddress, recipient1, recipient2);
 
   const refUID1 = targetAttestation1 ? targetAttestation1.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
   const refUID2 = targetAttestation2 ? targetAttestation2.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -332,4 +278,62 @@ const updateRating = (winRating, winPlayerGamesCount, lossRating, lossPlayerGame
   const newLossRating = Math.round(loser.getRating());
 
   return [newWinRating, newLossRating];
+};
+
+const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient2) => {
+  const easQuery = `
+    query Attestation {
+      firstRecipientAttestations: attestations(
+        take: 2,
+        skip: 0,
+        orderBy: { data: desc },
+        where: { 
+          schemaId: { equals: "${schema}" }, 
+          attester: { equals: "${proxyAddress}" },
+          recipient: { equals: "${recipient1}" },
+          revoked: { equals: false },
+        },
+      ) {
+        decodedDataJson
+        id
+      }
+
+      secondRecipientAttestations: attestations(
+        take: 2,
+        skip: 0,
+        orderBy: { data: desc },
+        where: { 
+          schemaId: { equals: "${schema}" }, 
+          attester: { equals: "${proxyAddress}" },
+          recipient: { equals: "${recipient2}" },
+          revoked: { equals: false },
+        },
+      ) {
+        decodedDataJson
+        id
+      }
+    }
+  `;
+
+  const easResponse = await fetch("https://base.easscan.org/graphql", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      query: easQuery,
+      variables: {}
+    }),
+  });
+
+  if (!easResponse.ok) {
+    throw new HttpsError('internal', 'Failed to fetch attestations');
+  }
+
+  // TODO: if there are repeated max nonces, make an extra request finding the earliest attestation with the max nonce
+
+  const easResponseJson = await easResponse.json();
+  const targetAttestation1 = easResponseJson.data.firstRecipientAttestations[0] || null;
+  const targetAttestation2 = easResponseJson.data.secondRecipientAttestations[0] || null;
+  return [targetAttestation1, targetAttestation2];
 };
