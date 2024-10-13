@@ -249,7 +249,7 @@ const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient
   const easQuery = `
     query Attestation {
       firstRecipientAttestations: attestations(
-        take: 2,
+        take: 10,
         skip: 0,
         orderBy: { data: desc },
         where: { 
@@ -264,7 +264,7 @@ const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient
       }
 
       secondRecipientAttestations: attestations(
-        take: 2,
+        take: 10,
         skip: 0,
         orderBy: { data: desc },
         where: { 
