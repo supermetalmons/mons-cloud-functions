@@ -114,49 +114,12 @@ exports.attestVictory = onCall(async (request) => {
   const recipient2 = opponentEthAddress;
 
   const [targetAttestation1, targetAttestation2] = await getLatestAttestations(schema, proxyAddress, recipient1, recipient2);
-
-  const refUID1 = targetAttestation1 ? targetAttestation1.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
-  const refUID2 = targetAttestation2 ? targetAttestation2.id : "0x0000000000000000000000000000000000000000000000000000000000000000";
-
-  let nonce1 = 0;
-  if (targetAttestation1) {
-    const nonceItem = JSON.parse(targetAttestation1.decodedDataJson).find(item => item.name === "nonce");
-    if (!nonceItem || typeof nonceItem.value.value !== 'number') {
-      throw new HttpsError('internal', 'Invalid nonce value in previous attestation');
-    }
-    nonce1 = nonceItem.value.value + 1;
-  }
-  
-  let nonce2 = 0;
-  if (targetAttestation2) {
-    const nonceItem = JSON.parse(targetAttestation2.decodedDataJson).find(item => item.name === "nonce");
-    if (!nonceItem || typeof nonceItem.value.value !== 'number') {
-      throw new HttpsError('internal', 'Invalid nonce value in previous attestation');
-    }
-    nonce2 = nonceItem.value.value + 1;
-  }
-
+  const refUID1 = targetAttestation1.id;
+  const refUID2 = targetAttestation2.id;
+  const nonce1 = targetAttestation1.nonce;
+  const nonce2 = targetAttestation2.nonce;
   // TODO: store these nonces corresponding for the gameId – preventing that game getting reattested
-
-  let rating1 = 1500;
-  if (targetAttestation1) {
-    const ratingItem = JSON.parse(targetAttestation1.decodedDataJson).find(item => item.name === "newRating");
-    if (!ratingItem || typeof ratingItem.value.value !== 'number') {
-      throw new HttpsError('internal', 'Invalid rating value in previous attestation');
-    }
-    rating1 = ratingItem.value.value;
-  }
-  
-  let rating2 = 1500;
-  if (targetAttestation2) {
-    const ratingItem = JSON.parse(targetAttestation2.decodedDataJson).find(item => item.name === "newRating");
-    if (!ratingItem || typeof ratingItem.value.value !== 'number') {
-      throw new HttpsError('internal', 'Invalid rating value in previous attestation');
-    }
-    rating2 = ratingItem.value.value;
-  }
-
-  const [newRating1, newRating2] = updateRating(rating1, nonce1, rating2, nonce2);
+  const [newRating1, newRating2] = updateRating(targetAttestation1.rating, nonce1, targetAttestation2.rating, nonce2);
 
   const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
   const [version] = await secretManagerServiceClient.accessSecretVersion({
@@ -332,13 +295,44 @@ const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient
     throw new HttpsError('internal', 'Failed to fetch attestations');
   }
 
+  const easResponseJson = await easResponse.json();
+  const targetAttestation1 = processAttestation(easResponseJson.data.firstRecipientAttestations[0] || null);
+  const targetAttestation2 = processAttestation(easResponseJson.data.secondRecipientAttestations[0] || null);
+
   // TODO: if there are repeated max nonces, make an extra request finding the earliest attestation with the max nonce
   // data for nonce 6: 0x000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000004640000000000000000000000000000000000000000000000000000000000000001
   // data for nonce 5: 0x000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000003770000000000000000000000000000000000000000000000000000000000000000
   // TODO: if nonces are equal, get attestations with data prefix corresponding to that nonce, orderBy: { time: asc }
 
-  const easResponseJson = await easResponse.json();
-  const targetAttestation1 = easResponseJson.data.firstRecipientAttestations[0] || null;
-  const targetAttestation2 = easResponseJson.data.secondRecipientAttestations[0] || null;
   return [targetAttestation1, targetAttestation2];
+};
+
+const processAttestation = (targetAttestation) => {
+  const result = {
+    id: "0x0000000000000000000000000000000000000000000000000000000000000000",
+    nonce: 0,
+    rating: 1500
+  };
+
+  if (targetAttestation) {
+    result.id = targetAttestation.id;
+
+    const decodedData = JSON.parse(targetAttestation.decodedDataJson);
+
+    const nonceItem = decodedData.find(item => item.name === "nonce");
+    if (nonceItem && typeof nonceItem.value.value === 'number') {
+      result.nonce = nonceItem.value.value + 1;
+    } else {
+      throw new HttpsError('internal', 'Invalid nonce value in previous attestation');
+    }
+
+    const ratingItem = decodedData.find(item => item.name === "newRating");
+    if (ratingItem && typeof ratingItem.value.value === 'number') {
+      result.rating = ratingItem.value.value;
+    } else {
+      throw new HttpsError('internal', 'Invalid rating value in previous attestation');
+    }
+  }
+
+  return result;
 };
