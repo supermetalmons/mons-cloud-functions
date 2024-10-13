@@ -138,25 +138,25 @@ exports.attestVictory = onCall(async (request) => {
 
   // TODO: store these nonces corresponding for the gameId – preventing that game getting reattested
 
-  let elo1 = 1500;
+  let rating1 = 1500;
   if (targetAttestation1) {
     const ratingItem = JSON.parse(targetAttestation1.decodedDataJson).find(item => item.name === "newRating");
     if (!ratingItem || typeof ratingItem.value.value !== 'number') {
       throw new HttpsError('internal', 'Invalid rating value in previous attestation');
     }
-    elo1 = ratingItem.value.value;
+    rating1 = ratingItem.value.value;
   }
   
-  let elo2 = 1500;
+  let rating2 = 1500;
   if (targetAttestation2) {
     const ratingItem = JSON.parse(targetAttestation2.decodedDataJson).find(item => item.name === "newRating");
     if (!ratingItem || typeof ratingItem.value.value !== 'number') {
       throw new HttpsError('internal', 'Invalid rating value in previous attestation');
     }
-    elo2 = ratingItem.value.value;
+    rating2 = ratingItem.value.value;
   }
 
-  const [newElo1, newElo2] = updateRating(elo1, nonce1, elo2, nonce2);
+  const [newRating1, newRating2] = updateRating(rating1, nonce1, rating2, nonce2);
 
   const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
   const [version] = await secretManagerServiceClient.accessSecretVersion({
@@ -180,12 +180,12 @@ exports.attestVictory = onCall(async (request) => {
 
   const encodedData1 = schemaEncoder.encodeData([
     { name: "nonce", value: nonce1, type: "uint32" },
-    { name: "newRating", value: newElo1, type: "uint16" },
+    { name: "newRating", value: newRating1, type: "uint16" },
     { name: "win", value: true, type: "bool" },
   ]);
   const encodedData2 = schemaEncoder.encodeData([
     { name: "nonce", value: nonce2, type: "uint32" },
-    { name: "newRating", value: newElo2, type: "uint16" },
+    { name: "newRating", value: newRating2, type: "uint16" },
     { name: "win", value: false, type: "bool" },
   ]);
 
