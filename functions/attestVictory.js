@@ -261,6 +261,7 @@ const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient
       ) {
         decodedDataJson
         id
+        time
       }
 
       secondRecipientAttestations: attestations(
@@ -276,6 +277,7 @@ const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient
       ) {
         decodedDataJson
         id
+        time
       }
     }
   `;
