@@ -118,7 +118,13 @@ exports.attestVictory = onCall(async (request) => {
   const refUID2 = targetAttestation2.id;
   const nonce1 = targetAttestation1.nonce;
   const nonce2 = targetAttestation2.nonce;
-  // TODO: store these nonces corresponding for the gameId – preventing that game getting reattested
+
+  if (!matchData.nonce) {
+    await matchRef.update({ nonce: nonce1 });
+  } else if (matchData.nonce !== nonce1) {
+    throw new HttpsError('internal', 'Can not attest that game anymore');
+  }
+
   const [newRating1, newRating2] = updateRating(targetAttestation1.rating, nonce1, targetAttestation2.rating, nonce2);
 
   const name = `projects/${process.env.GCLOUD_PROJECT}/secrets/mons-attester/versions/latest`;
