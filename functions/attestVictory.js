@@ -306,17 +306,25 @@ const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient
 const processAllRawAttestations = (rawAttestations) => {
   let targetAttestation = processAttestation(rawAttestations.length > 0 ? rawAttestations[0] : null);
   const maxNonce = targetAttestation.nonce;
+  let requireAtLeastOneWithLowerNonce = false;
 
   for (let i = 1; i < rawAttestations.length; i++) {
     const attestation = processAttestation(rawAttestations[i]);
     if (attestation.nonce > maxNonce) {
       throw new HttpsError('internal', 'Unexpected order of attestations');
-    } else if (attestation.nonce === maxNonce && attestation.time < targetAttestation.time) {
-      targetAttestation = attestation;
-      // TODO: when there are several attestations with maxNonce, require at least one with a lower nonce, otherwise throw an error
+    } else if (attestation.nonce === maxNonce) {
+      if (attestation.time < targetAttestation.time) {
+        targetAttestation = attestation;
+      }
+      requireAtLeastOneWithLowerNonce = true;
+    } else if (attestation.nonce < maxNonce) {
+      return targetAttestation;
     }
   }
 
+  if (requireAtLeastOneWithLowerNonce && maxNonce > 0) {
+    throw new HttpsError('internal', 'Could not find the earliest attestation with max nonce');
+  }
   return targetAttestation;
 };
 
