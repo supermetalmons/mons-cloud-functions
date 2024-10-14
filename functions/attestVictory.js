@@ -298,26 +298,39 @@ const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient
   }
 
   const easResponseJson = await easResponse.json();
-  const targetAttestation1 = processAttestation(easResponseJson.data.firstRecipientAttestations[0] || null);
-  const targetAttestation2 = processAttestation(easResponseJson.data.secondRecipientAttestations[0] || null);
-
-  // TODO: if there are repeated max nonces, make an extra request finding the earliest attestation with the max nonce
-  // data for nonce 6: 0x000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000004640000000000000000000000000000000000000000000000000000000000000001
-  // data for nonce 5: 0x000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000003770000000000000000000000000000000000000000000000000000000000000000
-  // TODO: if nonces are equal, get attestations with data prefix corresponding to that nonce, orderBy: { time: asc }
-
+  const targetAttestation1 = processAllRawAttestations(easResponseJson.data.firstRecipientAttestations);
+  const targetAttestation2 = processAllRawAttestations(easResponseJson.data.secondRecipientAttestations);
   return [targetAttestation1, targetAttestation2];
+};
+
+const processAllRawAttestations = (rawAttestations) => {
+  let targetAttestation = processAttestation(rawAttestations.length > 0 ? rawAttestations[0] : null);
+  const maxNonce = targetAttestation.nonce;
+
+  for (let i = 1; i < rawAttestations.length; i++) {
+    const attestation = processAttestation(rawAttestations[i]);
+    if (attestation.nonce > maxNonce) {
+      throw new HttpsError('internal', 'Unexpected order of attestations');
+    } else if (attestation.nonce === maxNonce && attestation.time < targetAttestation.time) {
+      targetAttestation = attestation;
+      // TODO: when there are several attestations with maxNonce, require at least one with a lower nonce, otherwise throw an error
+    }
+  }
+
+  return targetAttestation;
 };
 
 const processAttestation = (targetAttestation) => {
   const result = {
     id: "0x0000000000000000000000000000000000000000000000000000000000000000",
     nonce: 0,
-    rating: 1500
+    rating: 1500,
+    time: 0,
   };
 
   if (targetAttestation) {
     result.id = targetAttestation.id;
+    result.time = targetAttestation.time;
 
     const decodedData = JSON.parse(targetAttestation.decodedDataJson);
 
