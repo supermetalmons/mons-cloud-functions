@@ -119,9 +119,11 @@ exports.attestVictory = onCall(async (request) => {
   const nonce1 = targetAttestation1.nonce;
   const nonce2 = targetAttestation2.nonce;
 
-  if (!matchData.nonce) {
-    await matchRef.update({ nonce: nonce1 });
-  } else if (matchData.nonce !== nonce1) {
+  const nonceRef = admin.database().ref(`players/${uid}/nonces/${id}`);
+  const nonceSnapshot = await nonceRef.once('value');
+  if (!nonceSnapshot.exists()) {
+    await nonceRef.set(nonce1);
+  } else if (nonceSnapshot.val() !== nonce1) {
     throw new HttpsError('internal', 'Can not attest that game anymore');
   }
 
