@@ -21,23 +21,53 @@ exports.startTimer = onCall(async (request) => {
     .ref(`players/${opponentId}/matches/${id}`);
   const opponentMatchSnapshot = await opponentMatchRef.once("value");
   const opponentMatchData = opponentMatchSnapshot.val();
+    
+  const color = matchData.color;
+  const opponentColor = opponentMatchData.color;
 
-  // TODO: get the current player / turn info, make sure there is no winner / resigner yet
-  // TODO: do not run an entire winner verification
-  
-  // const color = matchData.color;
-  // const opponentColor = opponentMatchData.color;
-  // const mons = await import("mons-rust");
-  // const winnerColorFen = mons.winner(
-  //   matchData.fen,
-  //   opponentMatchData.fen,
-  //   matchData.flatMovesString,
-  //   opponentMatchData.flatMovesString
-  // );
+  const mons = await import("mons-rust");
+  const game = mons.MonsGameModel.from_fen(opponentMatchData.fen);
+
+  if (matchData.status == "surrendered" || opponentMatchData.status == "surrendered" || game.winner_color() !== undefined) {
+    throw new HttpsError(
+      "failed-precondition",
+      "game is already over."
+    );
+  }
+
+  let whiteFlatMovesString = "";
+  let blackFlatMovesString = "";
+  if (color === "white") {
+    whiteFlatMovesString = matchData.flatMovesString;
+    blackFlatMovesString = opponentMatchData.flatMovesString;
+  } else {
+    whiteFlatMovesString = opponentMatchData.flatMovesString;
+    blackFlatMovesString = matchData.flatMovesString;
+  }
+
+  let result = game.verify_moves(whiteFlatMovesString, blackFlatMovesString);
+  if (!result) {
+    throw new HttpsError(
+      "failed-precondition",
+      "something is wrong with the moves."
+    );
+  }
+
+  let turnNumber = game.turn_number();
+  let activeColor = game.active_color();
+  let opponentColorModel = opponentColor === "white" ? mons.Color.White : mons.Color.Black;
+
+  if (activeColor != opponentColorModel) {
+    throw new HttpsError(
+      "failed-precondition",
+      "can't start a timer on your turn."
+    );
+  }
 
   // TODO: create a timer within player's match model
 
   return {
+    turnNumber: turnNumber,
     ok: true,
   };
 });
