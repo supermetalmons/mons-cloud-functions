@@ -28,7 +28,7 @@ exports.startTimer = onCall(async (request) => {
   const mons = await import("mons-rust");
   
   let game = mons.MonsGameModel.from_fen(matchData.fen);
-  if (!game.is_later_than(opponentMatch.fen)) {
+  if (!game.is_later_than(opponentMatchData.fen)) {
     game = mons.MonsGameModel.from_fen(opponentMatchData.fen);
   }
 
