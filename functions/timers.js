@@ -68,10 +68,12 @@ exports.startTimer = onCall(async (request) => {
     );
   }
 
+  const targetTimestamp = Date.now() + 90000;
   // TODO: create a timer within player's match model
 
   return {
     turnNumber: turnNumber,
+    targetTimestamp: targetTimestamp,
     ok: true,
   };
 });
