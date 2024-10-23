@@ -26,7 +26,11 @@ exports.startTimer = onCall(async (request) => {
   const opponentColor = opponentMatchData.color;
 
   const mons = await import("mons-rust");
-  const game = mons.MonsGameModel.from_fen(opponentMatchData.fen);
+  
+  let game = mons.MonsGameModel.from_fen(matchData.fen);
+  if (!game.is_later_than(opponentMatch.fen)) {
+    game = mons.MonsGameModel.from_fen(opponentMatchData.fen);
+  }
 
   if (matchData.status == "surrendered" || opponentMatchData.status == "surrendered" || game.winner_color() !== undefined) {
     throw new HttpsError(
