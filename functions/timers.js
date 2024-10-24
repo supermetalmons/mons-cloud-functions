@@ -77,8 +77,7 @@ exports.startTimer = onCall(async (request) => {
   await matchRef.child("timer").set(timerString);
 
   return {
-    turnNumber: turnNumber,
-    targetTimestamp: targetTimestamp,
+    timer: timerString,
     ok: true,
   };
 });
