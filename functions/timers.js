@@ -68,7 +68,7 @@ exports.startTimer = onCall(async (request) => {
     );
   }
 
-  const targetTimestamp = Date.now() + 90000;
+  const targetTimestamp = Date.now() + 90500;
   const timerString = `${turnNumber};${targetTimestamp}`;
   await matchRef.child('timer').set(timerString);
 
