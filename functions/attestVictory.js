@@ -62,9 +62,9 @@ exports.attestVictory = onCall(async (request) => {
   }
 
   var result = "none";
-  if (matchData.status == "surrendered") {
+  if (matchData.status == "surrendered" || opponentMatchData.timer == "gg") {
     result = "gg";
-  } else if (opponentMatchData.status == "surrendered") {
+  } else if (opponentMatchData.status == "surrendered" || matchData.timer == "gg") {
     result = "win";
   } else {
     const color = matchData.color;

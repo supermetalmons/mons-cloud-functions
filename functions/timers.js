@@ -21,22 +21,25 @@ exports.startTimer = onCall(async (request) => {
     .ref(`players/${opponentId}/matches/${id}`);
   const opponentMatchSnapshot = await opponentMatchRef.once("value");
   const opponentMatchData = opponentMatchSnapshot.val();
-    
+
   const color = matchData.color;
   const opponentColor = opponentMatchData.color;
 
   const mons = await import("mons-rust");
-  
+
   let game = mons.MonsGameModel.from_fen(matchData.fen);
   if (!game.is_later_than(opponentMatchData.fen)) {
     game = mons.MonsGameModel.from_fen(opponentMatchData.fen);
   }
 
-  if (matchData.status == "surrendered" || opponentMatchData.status == "surrendered" || game.winner_color() !== undefined) {
-    throw new HttpsError(
-      "failed-precondition",
-      "game is already over."
-    );
+  if (
+    matchData.status == "surrendered" ||
+    opponentMatchData.status == "surrendered" ||
+    game.winner_color() !== undefined ||
+    matchData.timer == "gg" ||
+    opponentMatchData.timer == "gg"
+  ) {
+    throw new HttpsError("failed-precondition", "game is already over.");
   }
 
   let whiteFlatMovesString = "";
@@ -59,18 +62,19 @@ exports.startTimer = onCall(async (request) => {
 
   let turnNumber = game.turn_number();
   let activeColor = game.active_color();
-  let opponentColorModel = opponentColor === "white" ? mons.Color.White : mons.Color.Black;
+  let opponentColorModel =
+    opponentColor === "white" ? mons.Color.White : mons.Color.Black;
 
   if (activeColor != opponentColorModel) {
     throw new HttpsError(
       "failed-precondition",
-      "can't start a timer on your turn."
+      "can't start a timer on your own turn."
     );
   }
 
   const targetTimestamp = Date.now() + 90500;
   const timerString = `${turnNumber};${targetTimestamp}`;
-  await matchRef.child('timer').set(timerString);
+  await matchRef.child("timer").set(timerString);
 
   return {
     turnNumber: turnNumber,
@@ -100,21 +104,70 @@ exports.claimVictoryByTimer = onCall(async (request) => {
   const opponentMatchSnapshot = await opponentMatchRef.once("value");
   const opponentMatchData = opponentMatchSnapshot.val();
 
-  // TODO: get the current player / turn info, make sure there is no winner / resigner yet
-  // TODO: do not run an entire winner verification
-  // TODO: compare the game state with the existing timer
-  
-  // const color = matchData.color;
-  // const opponentColor = opponentMatchData.color;
-  // const mons = await import("mons-rust");
-  // const winnerColorFen = mons.winner(
-  //   matchData.fen,
-  //   opponentMatchData.fen,
-  //   matchData.flatMovesString,
-  //   opponentMatchData.flatMovesString
-  // );
+  const color = matchData.color;
+  const opponentColor = opponentMatchData.color;
 
-  return {
-    ok: true,
-  };
+  const mons = await import("mons-rust");
+
+  let game = mons.MonsGameModel.from_fen(matchData.fen);
+  if (!game.is_later_than(opponentMatchData.fen)) {
+    game = mons.MonsGameModel.from_fen(opponentMatchData.fen);
+  }
+
+  if (
+    matchData.status == "surrendered" ||
+    opponentMatchData.status == "surrendered" ||
+    matchData.timer == "gg" ||
+    opponentMatchData.timer == "gg" ||
+    game.winner_color() !== undefined
+  ) {
+    throw new HttpsError("failed-precondition", "game is already over.");
+  }
+
+  let whiteFlatMovesString = "";
+  let blackFlatMovesString = "";
+  if (color === "white") {
+    whiteFlatMovesString = matchData.flatMovesString;
+    blackFlatMovesString = opponentMatchData.flatMovesString;
+  } else {
+    whiteFlatMovesString = opponentMatchData.flatMovesString;
+    blackFlatMovesString = matchData.flatMovesString;
+  }
+
+  let result = game.verify_moves(whiteFlatMovesString, blackFlatMovesString);
+  if (!result) {
+    throw new HttpsError(
+      "failed-precondition",
+      "something is wrong with the moves."
+    );
+  }
+
+  let activeColor = game.active_color();
+  let opponentColorModel =
+    opponentColor === "white" ? mons.Color.White : mons.Color.Black;
+
+  if (activeColor != opponentColorModel) {
+    throw new HttpsError("failed-precondition", "can't claim timer victory on your own turn.");
+  }
+
+  const timer = matchData.timer;
+  if (timer && typeof timer === 'string') {
+    const [turnNumber, targetTimestamp] = timer.split(';').map(Number);
+    if (!isNaN(turnNumber) && !isNaN(targetTimestamp)) {
+      const timeDelta = targetTimestamp - Date.now();
+      const sameTurn = game.turn_number() === turnNumber;
+      if (sameTurn && (timeDelta) <= 0) {
+        await matchRef.child("timer").set("gg");
+        return { ok: true, };
+      } else if (!sameTurn) {
+        throw new HttpsError("failed-precondition", "can't claim this timer anymore, it's turn is over.");
+      } else {
+        throw new HttpsError("failed-precondition", `can't claim yet, ${timeDelta} ms remaining`);
+      }
+    } else {
+      throw new HttpsError("failed-precondition", "wrong timer format.");
+    }
+  } else {
+    throw new HttpsError("failed-precondition", "could not find an existing timer.");
+  }
 });
