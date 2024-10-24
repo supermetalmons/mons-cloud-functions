@@ -69,7 +69,8 @@ exports.startTimer = onCall(async (request) => {
   }
 
   const targetTimestamp = Date.now() + 90000;
-  // TODO: create a timer within player's match model
+  const timerString = `${turnNumber};${targetTimestamp}`;
+  await matchRef.child('timer').set(timerString);
 
   return {
     turnNumber: turnNumber,
