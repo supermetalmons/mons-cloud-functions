@@ -3,13 +3,14 @@ const admin = require("firebase-admin");
 
 exports.startMatchTimer = onCall(async (request) => {
   const uid = request.auth.uid;
-  const id = request.data.inviteId; // TODO: distinguish match id and invite id
+  const inviteId = request.data.inviteId;
+  const matchId = request.data.matchId;
 
-  const matchRef = admin.database().ref(`players/${uid}/matches/${id}`);
+  const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
   const matchSnapshot = await matchRef.once("value");
   const matchData = matchSnapshot.val();
 
-  const inviteRef = admin.database().ref(`invites/${id}`);
+  const inviteRef = admin.database().ref(`invites/${inviteId}`);
   const inviteSnapshot = await inviteRef.once("value");
   const inviteData = inviteSnapshot.val();
 
@@ -18,7 +19,7 @@ exports.startMatchTimer = onCall(async (request) => {
 
   const opponentMatchRef = admin
     .database()
-    .ref(`players/${opponentId}/matches/${id}`);
+    .ref(`players/${opponentId}/matches/${matchId}`);
   const opponentMatchSnapshot = await opponentMatchRef.once("value");
   const opponentMatchData = opponentMatchSnapshot.val();
 
@@ -86,13 +87,14 @@ exports.startMatchTimer = onCall(async (request) => {
 
 exports.claimMatchVictoryByTimer = onCall(async (request) => {
   const uid = request.auth.uid;
-  const id = request.data.inviteId; // TODO: distinguish match id and invite id
+  const inviteId = request.data.inviteId;
+  const matchId = request.data.matchId;
 
-  const matchRef = admin.database().ref(`players/${uid}/matches/${id}`);
+  const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
   const matchSnapshot = await matchRef.once("value");
   const matchData = matchSnapshot.val();
 
-  const inviteRef = admin.database().ref(`invites/${id}`);
+  const inviteRef = admin.database().ref(`invites/${inviteId}`);
   const inviteSnapshot = await inviteRef.once("value");
   const inviteData = inviteSnapshot.val();
 
@@ -101,7 +103,7 @@ exports.claimMatchVictoryByTimer = onCall(async (request) => {
 
   const opponentMatchRef = admin
     .database()
-    .ref(`players/${opponentId}/matches/${id}`);
+    .ref(`players/${opponentId}/matches/${matchId}`);
   const opponentMatchSnapshot = await opponentMatchRef.once("value");
   const opponentMatchData = opponentMatchSnapshot.val();
 

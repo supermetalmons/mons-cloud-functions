@@ -18,13 +18,14 @@ exports.attestMatchVictory = onCall(async (request) => {
   const schema = "0x5c6e798cbb817442fa075e01b65d5d65d3ac35c2b05c1306e8771a1c8a3adb32";
 
   const uid = request.auth.uid;
-  const id = request.data.inviteId; // TODO: distinguish match id and invite id
+  const inviteId = request.data.inviteId;
+  const matchId = request.data.matchId;
 
-  const matchRef = admin.database().ref(`players/${uid}/matches/${id}`);
+  const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
   const matchSnapshot = await matchRef.once("value");
   const matchData = matchSnapshot.val();
 
-  const inviteRef = admin.database().ref(`invites/${id}`);
+  const inviteRef = admin.database().ref(`invites/${inviteId}`);
   const inviteSnapshot = await inviteRef.once("value");
   const inviteData = inviteSnapshot.val();
 
@@ -33,7 +34,7 @@ exports.attestMatchVictory = onCall(async (request) => {
 
   const opponentMatchRef = admin
     .database()
-    .ref(`players/${opponentId}/matches/${id}`);
+    .ref(`players/${opponentId}/matches/${matchId}`);
   const opponentMatchSnapshot = await opponentMatchRef.once("value");
   const opponentMatchData = opponentMatchSnapshot.val();
 
@@ -119,7 +120,7 @@ exports.attestMatchVictory = onCall(async (request) => {
   const nonce1 = targetAttestation1.nonce;
   const nonce2 = targetAttestation2.nonce;
 
-  const nonceRef = admin.database().ref(`players/${uid}/nonces/${id}`);
+  const nonceRef = admin.database().ref(`players/${uid}/nonces/${matchId}`);
   const nonceSnapshot = await nonceRef.once('value');
   if (!nonceSnapshot.exists()) {
     await nonceRef.set(nonce1);
