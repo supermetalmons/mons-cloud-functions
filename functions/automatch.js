@@ -24,8 +24,19 @@ exports.automatch = onCall(async (request) => {
   const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
   const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
-  const ipAddress = request.rawRequest.ip;
-  const message = `${name} from ${ipAddress} is looking for a match!`;
+  let locationString = "🌎";
+  try {
+    const response = await fetch(
+      `http://ip-api.com/json/${request.rawRequest.ip}`
+    );
+    const data = await response.json();
+    if (data.status === "success") {
+      locationString = `${data.city}, ${data.country}`;
+    }
+  } catch (error) {
+    console.error("Error getting location:", error);
+  }
+  const message = `${name} from ${locationString} is looking for a match!`;
 
   try {
     await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
