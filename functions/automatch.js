@@ -31,7 +31,7 @@ exports.automatch = onCall(async (request) => {
     );
     const data = await response.json();
     if (data.status === "success") {
-      locationString = `${data.city}, ${data.country}`;
+      locationString = `${data.country.toLowerCase()}`;
     }
   } catch (error) {
     console.error("Error getting location:", error);
