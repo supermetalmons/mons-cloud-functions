@@ -92,7 +92,7 @@ exports.automatch = onCall(async (request) => {
     } catch (error) {
       console.error("Error getting location:", error);
     }
-    const message = `${uid} ${name} from ${locationString} is looking for a match!`;
+    const message = `${uid} ${name} from ${locationString} is looking for a match 👉 https://mons.link`;
     await sendTelegramMessage(message);
 
     return {
