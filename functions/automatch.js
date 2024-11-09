@@ -17,10 +17,21 @@ exports.automatch = onCall(async (request) => {
   if (snapshot.exists()) {
     const firstAutomatchId = Object.keys(snapshot.val())[0];
     const existingAutomatchData = snapshot.val()[firstAutomatchId];
-    // TODO: make sure there is still no guest for this invite, otherwise try getting another automatch
-    // TODO: won't need to make sure though if joining automatch as a guest will be prohibited for a non admin users
     if (existingAutomatchData.uid !== uid) {
       await admin.database().ref(`automatch/${firstAutomatchId}`).remove();
+      const match = {
+        version: controllerVersion,
+        color: existingAutomatchData.hostColor === "white" ? "black" : "white",
+        emojiId: emojiId,
+        fen: initialFen,
+        status: "",
+        flatMovesString: "",
+        timer: "",
+      };
+
+      await admin.database().ref(`invites/${firstAutomatchId}/guestId`).set(uid);
+      await admin.database().ref(`players/${uid}/matches/${firstAutomatchId}`).set(match);
+
       const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
       sendTelegramMessage(`${existingPlayerName} automatched with ${name}`).catch(console.error);
     }
@@ -30,7 +41,7 @@ exports.automatch = onCall(async (request) => {
     };
   } else {
     const inviteId = generateInviteId();
-    await admin.database().ref(`automatch/${inviteId}`).set({ uid: uid, timestamp: admin.database.ServerValue.TIMESTAMP, ethAddress: ethAddress });
+    await admin.database().ref(`automatch/${inviteId}`).set({ uid: uid, timestamp: admin.database.ServerValue.TIMESTAMP, ethAddress: ethAddress, hostColor: hostColor });
 
     const invite = {
       version: controllerVersion,
