@@ -1,12 +1,8 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { SecretManagerServiceClient } = require("@google-cloud/secret-manager");
-const {
-  EAS,
-  SchemaEncoder,
-  EIP712Proxy,
-} = require("@ethereum-attestation-service/eas-sdk");
+const { EAS, SchemaEncoder, EIP712Proxy } = require("@ethereum-attestation-service/eas-sdk");
 const { ethers } = require("ethers");
-const glicko2 = require('glicko2');
+const glicko2 = require("glicko2");
 const admin = require("firebase-admin");
 
 const secretManagerServiceClient = new SecretManagerServiceClient();
@@ -29,12 +25,9 @@ exports.attestMatchVictory = onCall(async (request) => {
   const inviteSnapshot = await inviteRef.once("value");
   const inviteData = inviteSnapshot.val();
 
-  const opponentId =
-    inviteData.guestId === uid ? inviteData.hostId : inviteData.guestId;
+  const opponentId = inviteData.guestId === uid ? inviteData.hostId : inviteData.guestId;
 
-  const opponentMatchRef = admin
-    .database()
-    .ref(`players/${opponentId}/matches/${matchId}`);
+  const opponentMatchRef = admin.database().ref(`players/${opponentId}/matches/${matchId}`);
   const opponentMatchSnapshot = await opponentMatchRef.once("value");
   const opponentMatchData = opponentMatchSnapshot.val();
 
@@ -43,23 +36,15 @@ exports.attestMatchVictory = onCall(async (request) => {
   const playerEthAddress = playerEthAddressSnapshot.val();
 
   if (!playerEthAddress) {
-    throw new HttpsError(
-      "failed-precondition",
-      "Player's Ethereum address not found."
-    );
+    throw new HttpsError("failed-precondition", "Player's Ethereum address not found.");
   }
 
-  const opponentEthAddressRef = admin
-    .database()
-    .ref(`players/${opponentId}/ethAddress`);
+  const opponentEthAddressRef = admin.database().ref(`players/${opponentId}/ethAddress`);
   const opponentEthAddressSnapshot = await opponentEthAddressRef.once("value");
   const opponentEthAddress = opponentEthAddressSnapshot.val();
 
   if (!opponentEthAddress) {
-    throw new HttpsError(
-      "failed-precondition",
-      "Opponent's Ethereum address not found."
-    );
+    throw new HttpsError("failed-precondition", "Opponent's Ethereum address not found.");
   }
 
   var result = "none";
@@ -73,19 +58,9 @@ exports.attestMatchVictory = onCall(async (request) => {
     const mons = await import("mons-rust");
     var winnerColorFen = "";
     if (color == "white") {
-      winnerColorFen = mons.winner(
-        matchData.fen,
-        opponentMatchData.fen,
-        matchData.flatMovesString,
-        opponentMatchData.flatMovesString
-      );
+      winnerColorFen = mons.winner(matchData.fen, opponentMatchData.fen, matchData.flatMovesString, opponentMatchData.flatMovesString);
     } else {
-      winnerColorFen = mons.winner(
-        opponentMatchData.fen,
-        matchData.fen,
-        opponentMatchData.flatMovesString,
-        matchData.flatMovesString
-      );
+      winnerColorFen = mons.winner(opponentMatchData.fen, matchData.fen, opponentMatchData.flatMovesString, matchData.flatMovesString);
     }
     if (winnerColorFen != "") {
       if (winnerColorFen === "x") {
@@ -121,11 +96,11 @@ exports.attestMatchVictory = onCall(async (request) => {
   const nonce2 = targetAttestation2.nonce;
 
   const nonceRef = admin.database().ref(`players/${uid}/nonces/${matchId}`);
-  const nonceSnapshot = await nonceRef.once('value');
+  const nonceSnapshot = await nonceRef.once("value");
   if (!nonceSnapshot.exists()) {
     await nonceRef.set(nonce1);
   } else if (nonceSnapshot.val() !== nonce1) {
-    throw new HttpsError('internal', 'Can not attest that game anymore');
+    throw new HttpsError("internal", "Can not attest that game anymore");
   }
 
   const [newRating1, newRating2] = updateRating(targetAttestation1.rating, nonce1, targetAttestation2.rating, nonce2);
@@ -146,9 +121,7 @@ exports.attestMatchVictory = onCall(async (request) => {
   const proxy = await eas.getEIP712Proxy();
   const delegated = await proxy?.getDelegated();
 
-  const schemaEncoder = new SchemaEncoder(
-    "uint32 nonce, uint16 newRating, bool win"
-  );
+  const schemaEncoder = new SchemaEncoder("uint32 nonce, uint16 newRating, bool win");
 
   const encodedData1 = schemaEncoder.encodeData([
     { name: "nonce", value: nonce1, type: "uint32" },
@@ -226,10 +199,7 @@ exports.attestMatchVictory = onCall(async (request) => {
     };
   } catch (error) {
     console.error("Error in attestVictory:", error);
-    throw new HttpsError(
-      "internal",
-      "An error occurred while processing the attestation."
-    );
+    throw new HttpsError("internal", "An error occurred while processing the attestation.");
   }
 });
 
@@ -238,7 +208,7 @@ const updateRating = (winRating, winPlayerGamesCount, lossRating, lossPlayerGame
     tau: 0.75,
     rating: 1500,
     rd: 100,
-    vol: 0.06
+    vol: 0.06,
   };
 
   const ranking = new glicko2.Glicko2(settings);
@@ -292,18 +262,18 @@ const getLatestAttestations = async (schema, proxyAddress, recipient1, recipient
   `;
 
   const easResponse = await fetch("https://base.easscan.org/graphql", {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       query: easQuery,
-      variables: {}
+      variables: {},
     }),
   });
 
   if (!easResponse.ok) {
-    throw new HttpsError('internal', 'Failed to fetch attestations');
+    throw new HttpsError("internal", "Failed to fetch attestations");
   }
 
   const easResponseJson = await easResponse.json();
@@ -320,7 +290,7 @@ const processAllRawAttestations = (rawAttestations) => {
   for (let i = 1; i < rawAttestations.length; i++) {
     const attestation = processAttestation(rawAttestations[i]);
     if (attestation.nonce > maxNonce) {
-      throw new HttpsError('internal', 'Unexpected order of attestations');
+      throw new HttpsError("internal", "Unexpected order of attestations");
     } else if (attestation.nonce === maxNonce) {
       if (attestation.time < targetAttestation.time) {
         targetAttestation = attestation;
@@ -332,7 +302,7 @@ const processAllRawAttestations = (rawAttestations) => {
   }
 
   if (requireAtLeastOneWithLowerNonce && maxNonce > 0) {
-    throw new HttpsError('internal', 'Could not find the earliest attestation with max nonce');
+    throw new HttpsError("internal", "Could not find the earliest attestation with max nonce");
   }
   return targetAttestation;
 };
@@ -351,18 +321,18 @@ const processAttestation = (targetAttestation) => {
 
     const decodedData = JSON.parse(targetAttestation.decodedDataJson);
 
-    const nonceItem = decodedData.find(item => item.name === "nonce");
-    if (nonceItem && typeof nonceItem.value.value === 'number') {
+    const nonceItem = decodedData.find((item) => item.name === "nonce");
+    if (nonceItem && typeof nonceItem.value.value === "number") {
       result.nonce = nonceItem.value.value + 1;
     } else {
-      throw new HttpsError('internal', 'Invalid nonce value in previous attestation');
+      throw new HttpsError("internal", "Invalid nonce value in previous attestation");
     }
 
-    const ratingItem = decodedData.find(item => item.name === "newRating");
-    if (ratingItem && typeof ratingItem.value.value === 'number') {
+    const ratingItem = decodedData.find((item) => item.name === "newRating");
+    if (ratingItem && typeof ratingItem.value.value === "number") {
       result.rating = ratingItem.value.value;
     } else {
-      throw new HttpsError('internal', 'Invalid rating value in previous attestation');
+      throw new HttpsError("internal", "Invalid rating value in previous attestation");
     }
   }
 

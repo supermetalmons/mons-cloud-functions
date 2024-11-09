@@ -4,10 +4,7 @@ const admin = require("firebase-admin");
 
 exports.verifyEthAddress = onCall(async (request) => {
   if (!request.auth) {
-    throw new HttpsError(
-      "unauthenticated",
-      "The function must be called while authenticated."
-    );
+    throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
   }
 
   const message = request.data.message;
@@ -18,11 +15,7 @@ exports.verifyEthAddress = onCall(async (request) => {
   const address = fields.data.address;
   const uid = request.auth.uid;
 
-  if (
-    fields.success &&
-    fields.data.nonce === uid &&
-    fields.data.statement === "mons ftw"
-  ) {
+  if (fields.success && fields.data.nonce === uid && fields.data.statement === "mons ftw") {
     const db = admin.database();
     const ethAddressRef = db.ref(`players/${uid}/ethAddress`);
     const ethAddressSnapshot = await ethAddressRef.once("value");

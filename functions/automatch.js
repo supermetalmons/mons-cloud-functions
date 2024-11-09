@@ -3,10 +3,7 @@ const admin = require("firebase-admin");
 
 exports.automatch = onCall(async (request) => {
   if (!request.auth) {
-    throw new HttpsError(
-      "unauthenticated",
-      "The function must be called while authenticated."
-    );
+    throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
   }
 
   let name = "anon";
@@ -27,17 +24,14 @@ exports.automatch = onCall(async (request) => {
       const existingPlayerName = "anon"; // TODO: setup with actual names when possible
       const newAutomatchedPlayerName = "anon";
 
-      await sendTelegramMessage(
-        `${existingPlayerName} automatched with ${newAutomatchedPlayerName}`
-      );
+      await sendTelegramMessage(`${existingPlayerName} automatched with ${newAutomatchedPlayerName}`);
     }
     return {
       ok: true,
       inviteId: firstAutomatchId,
     };
   } else {
-    const letters =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let inviteId = "auto_";
     for (let i = 0; i < 11; i++) {
       inviteId += letters.charAt(Math.floor(Math.random() * letters.length));
@@ -49,8 +43,7 @@ exports.automatch = onCall(async (request) => {
 
     const hostColor = Math.random() < 0.5 ? "white" : "black";
     const controllerVersion = 2;
-    const initialFen =
-      "0 0 w 0 0 0 0 0 1 n03y0xs0xd0xa0xe0xn03/n11/n11/n04xxmn01xxmn04/n03xxmn01xxmn01xxmn03/xxQn04xxUn04xxQ/n03xxMn01xxMn01xxMn03/n04xxMn01xxMn04/n11/n11/n03E0xA0xD0xS0xY0xn03";
+    const initialFen = "0 0 w 0 0 0 0 0 1 n03y0xs0xd0xa0xe0xn03/n11/n11/n04xxmn01xxmn04/n03xxmn01xxmn01xxmn03/xxQn04xxUn04xxQ/n03xxMn01xxMn01xxMn03/n04xxMn01xxMn04/n11/n11/n03E0xA0xD0xS0xY0xn03";
 
     const invite = {
       version: controllerVersion,
@@ -73,23 +66,18 @@ exports.automatch = onCall(async (request) => {
 
     await admin.database().ref(`players/${uid}/matches/${inviteId}`).set(match);
 
-    const playerEthAddressRef = admin
-      .database()
-      .ref(`players/${uid}/ethAddress`);
+    const playerEthAddressRef = admin.database().ref(`players/${uid}/ethAddress`);
     if (playerEthAddressRef) {
       const playerEthAddressSnapshot = await playerEthAddressRef.once("value");
       if (playerEthAddressSnapshot && playerEthAddressSnapshot.val()) {
         const playerEthAddress = playerEthAddressSnapshot.val();
-        name =
-          playerEthAddress.slice(2, 6) + "..." + playerEthAddress.slice(-4);
+        name = playerEthAddress.slice(2, 6) + "..." + playerEthAddress.slice(-4);
       }
     }
 
     let locationString = "🌎";
     try {
-      const response = await fetch(
-        `http://ip-api.com/json/${request.rawRequest.ip}`
-      );
+      const response = await fetch(`http://ip-api.com/json/${request.rawRequest.ip}`);
       const data = await response.json();
       if (data.status === "success") {
         locationString = `${data.country.toLowerCase()}`;
