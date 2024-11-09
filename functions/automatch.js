@@ -6,8 +6,9 @@ exports.automatch = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
   }
 
-  let name = "anon";
   const uid = request.auth.uid;
+  const ethAddress = await getPlayerEthAddress(uid);
+  const name = getDisplayNameFromAddress(ethAddress);
   const emojiId = request.data.emojiId;
 
   const automatchRef = admin.database().ref("automatch").limitToFirst(1);
@@ -20,11 +21,8 @@ exports.automatch = onCall(async (request) => {
     // TODO: won't need to make sure though if joining automatch as a guest will be prohibited for a non admin users
     if (existingAutomatchData.uid !== uid) {
       await admin.database().ref(`automatch/${firstAutomatchId}`).remove();
-
-      const existingPlayerName = "anon"; // TODO: setup with actual names when possible
-      const newAutomatchedPlayerName = "anon";
-
-      await sendTelegramMessage(`${existingPlayerName} automatched with ${newAutomatchedPlayerName}`);
+      const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
+      await sendTelegramMessage(`${existingPlayerName} automatched with ${name}`);
     }
     return {
       ok: true,
@@ -32,9 +30,7 @@ exports.automatch = onCall(async (request) => {
     };
   } else {
     const inviteId = generateInviteId();
-
-    // TODO: store eth address within automatch model
-    await admin.database().ref(`automatch/${inviteId}`).set({ uid: uid, timestamp: admin.database.ServerValue.TIMESTAMP });
+    await admin.database().ref(`automatch/${inviteId}`).set({ uid: uid, timestamp: admin.database.ServerValue.TIMESTAMP, ethAddress: ethAddress });
 
     const invite = {
       version: controllerVersion,
@@ -56,16 +52,6 @@ exports.automatch = onCall(async (request) => {
     };
 
     await admin.database().ref(`players/${uid}/matches/${inviteId}`).set(match);
-
-    const playerEthAddressRef = admin.database().ref(`players/${uid}/ethAddress`);
-    if (playerEthAddressRef) {
-      const playerEthAddressSnapshot = await playerEthAddressRef.once("value");
-      if (playerEthAddressSnapshot && playerEthAddressSnapshot.val()) {
-        const playerEthAddress = playerEthAddressSnapshot.val();
-        name = playerEthAddress.slice(2, 6) + "..." + playerEthAddress.slice(-4);
-      }
-    }
-
     const message = `${name} is looking for a match 👉 https://mons.link`;
     await sendTelegramMessage(message);
 
@@ -104,6 +90,24 @@ function generateInviteId() {
     inviteId += letters.charAt(Math.floor(Math.random() * letters.length));
   }
   return inviteId;
+}
+
+async function getPlayerEthAddress(uid) {
+  try {
+    const playerEthAddressRef = admin.database().ref(`players/${uid}/ethAddress`);
+    const playerEthAddressSnapshot = await playerEthAddressRef.once("value");
+    if (playerEthAddressSnapshot && playerEthAddressSnapshot.val()) {
+      return playerEthAddressSnapshot.val();
+    }
+  } catch (error) {
+    console.error("Error getting player ETH address:", error);
+  }
+  return "";
+}
+
+function getDisplayNameFromAddress(address) {
+  if (!address) return "anon";
+  return address.slice(2, 6) + "..." + address.slice(-4);
 }
 
 const hostColor = Math.random() < 0.5 ? "white" : "black";
