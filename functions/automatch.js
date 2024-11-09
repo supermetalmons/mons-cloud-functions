@@ -19,6 +19,15 @@ exports.automatch = onCall(async (request) => {
     const existingAutomatchData = snapshot.val()[firstAutomatchId];
     if (existingAutomatchData.uid !== uid) {
       await admin.database().ref(`automatch/${firstAutomatchId}`).remove();
+
+      const invite = {
+        version: controllerVersion,
+        hostId: existingAutomatchData.uid,
+        hostColor: existingAutomatchData.hostColor,
+        guestId: uid,
+        password: existingAutomatchData.password,
+      };
+
       const match = {
         version: controllerVersion,
         color: existingAutomatchData.hostColor === "white" ? "black" : "white",
@@ -29,7 +38,7 @@ exports.automatch = onCall(async (request) => {
         timer: "",
       };
 
-      await admin.database().ref(`invites/${firstAutomatchId}/guestId`).set(uid);
+      await admin.database().ref(`invites/${firstAutomatchId}`).set(invite);
       await admin.database().ref(`players/${uid}/matches/${firstAutomatchId}`).set(match);
 
       const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
@@ -41,13 +50,15 @@ exports.automatch = onCall(async (request) => {
     };
   } else {
     const inviteId = generateInviteId();
-    await admin.database().ref(`automatch/${inviteId}`).set({ uid: uid, timestamp: admin.database.ServerValue.TIMESTAMP, ethAddress: ethAddress, hostColor: hostColor });
+    const password = generateRandomString(15);
+    await admin.database().ref(`automatch/${inviteId}`).set({ uid: uid, timestamp: admin.database.ServerValue.TIMESTAMP, ethAddress: ethAddress, hostColor: hostColor, password: password });
 
     const invite = {
       version: controllerVersion,
       hostId: uid,
       hostColor: hostColor,
       guestId: null,
+      password: password,
     };
 
     await admin.database().ref(`invites/${inviteId}`).set(invite);
@@ -94,13 +105,17 @@ async function sendTelegramMessage(message) {
   }
 }
 
-function generateInviteId() {
+function generateRandomString(length) {
   const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let inviteId = "auto_";
-  for (let i = 0; i < 11; i++) {
-    inviteId += letters.charAt(Math.floor(Math.random() * letters.length));
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
   }
-  return inviteId;
+  return result;
+}
+
+function generateInviteId() {
+  return "auto_" + generateRandomString(11);
 }
 
 async function getPlayerEthAddress(uid) {
