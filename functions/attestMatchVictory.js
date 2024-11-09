@@ -17,6 +17,10 @@ exports.attestMatchVictory = onCall(async (request) => {
   const inviteId = request.data.inviteId;
   const matchId = request.data.matchId;
 
+  if (!inviteId.startsWith("auto_")) {
+    return { ok: false };
+  }
+
   const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
   const matchSnapshot = await matchRef.once("value");
   const matchData = matchSnapshot.val();
