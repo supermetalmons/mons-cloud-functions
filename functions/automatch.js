@@ -75,17 +75,7 @@ exports.automatch = onCall(async (request) => {
       }
     }
 
-    let locationString = "🌎";
-    try {
-      const response = await fetch(`http://ip-api.com/json/${request.rawRequest.ip}`);
-      const data = await response.json();
-      if (data.status === "success") {
-        locationString = `${data.country.toLowerCase()}`;
-      }
-    } catch (error) {
-      console.error("Error getting location:", error);
-    }
-    const message = `${name} from ${locationString} is looking for a match 👉 https://mons.link`;
+    const message = `${name} is looking for a match 👉 https://mons.link`;
     await sendTelegramMessage(message);
 
     return {
