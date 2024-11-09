@@ -32,14 +32,9 @@ exports.automatch = onCall(async (request) => {
     };
   } else {
     const inviteId = generateInviteId();
-    await admin.database().ref(`automatch/${inviteId}`).set({
-      uid: uid,
-      timestamp: admin.database.ServerValue.TIMESTAMP,
-    });
 
-    const hostColor = Math.random() < 0.5 ? "white" : "black";
-    const controllerVersion = 2;
-    const initialFen = "0 0 w 0 0 0 0 0 1 n03y0xs0xd0xa0xe0xn03/n11/n11/n04xxmn01xxmn04/n03xxmn01xxmn01xxmn03/xxQn04xxUn04xxQ/n03xxMn01xxMn01xxMn03/n04xxMn01xxMn04/n11/n11/n03E0xA0xD0xS0xY0xn03";
+    // TODO: store eth address within automatch model
+    await admin.database().ref(`automatch/${inviteId}`).set({ uid: uid, timestamp: admin.database.ServerValue.TIMESTAMP });
 
     const invite = {
       version: controllerVersion,
@@ -94,7 +89,7 @@ async function sendTelegramMessage(message) {
       body: JSON.stringify({
         chat_id: telegramChatId,
         text: message,
-        disable_web_page_preview: true
+        disable_web_page_preview: true,
       }),
     });
   } catch (error) {
@@ -110,3 +105,7 @@ function generateInviteId() {
   }
   return inviteId;
 }
+
+const hostColor = Math.random() < 0.5 ? "white" : "black";
+const controllerVersion = 2;
+const initialFen = "0 0 w 0 0 0 0 0 1 n03y0xs0xd0xa0xe0xn03/n11/n11/n04xxmn01xxmn04/n03xxmn01xxmn01xxmn03/xxQn04xxUn04xxQ/n03xxMn01xxMn01xxMn03/n04xxMn01xxMn04/n11/n11/n03E0xA0xD0xS0xY0xn03";
