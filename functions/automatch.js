@@ -105,8 +105,25 @@ async function getPlayerEthAddress(uid) {
   return "";
 }
 
+function matchKnownAddress(address) {
+  if (!address) return null;
+
+  const knownAddresses = {
+    "0xe26067c76fdbe877f48b0a8400cf5db8b47af0fe": "ivan",
+    "0x2bb97367ff26b701a60aedc213640c34f469cf38": "meinong",
+    "0xe4790dd79c334e3f848904975272ec17f9f70366": "bosch",
+  };
+
+  const lowerAddress = address.toLowerCase();
+  return knownAddresses[lowerAddress] || null;
+}
+
 function getDisplayNameFromAddress(address) {
   if (!address) return "anon";
+
+  const knownName = matchKnownAddress(address);
+  if (knownName) return knownName;
+
   return address.slice(2, 6) + "..." + address.slice(-4);
 }
 
