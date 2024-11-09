@@ -23,8 +23,12 @@ exports.automatch = onCall(async (request) => {
     // TODO: won't need to make sure though if joining automatch as a guest will be prohibited for a non admin users
     if (existingAutomatchData.uid !== uid) {
       await admin.database().ref(`automatch/${firstAutomatchId}`).remove();
+
+      const existingPlayerName = "anon"; // TODO: setup with actual names when possible
+      const newAutomatchedPlayerName = "anon";
+
       await sendTelegramMessage(
-        `${existingAutomatchData.uid} automatched with ${uid}`
+        `${existingPlayerName} automatched with ${newAutomatchedPlayerName}`
       );
     }
     return {
@@ -93,7 +97,7 @@ exports.automatch = onCall(async (request) => {
     } catch (error) {
       console.error("Error getting location:", error);
     }
-    const message = `${uid} ${name} from ${locationString} is looking for a match 👉 https://mons.link`;
+    const message = `${name} from ${locationString} is looking for a match 👉 https://mons.link`;
     await sendTelegramMessage(message);
 
     return {
