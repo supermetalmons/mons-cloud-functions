@@ -34,7 +34,7 @@ exports.automatch = onCall(async (request) => {
   } else {
     const letters =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let inviteId = "automatch";
+    let inviteId = "auto_";
     for (let i = 0; i < 11; i++) {
       inviteId += letters.charAt(Math.floor(Math.random() * letters.length));
     }
