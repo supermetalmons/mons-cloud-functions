@@ -42,7 +42,7 @@ exports.automatch = onCall(async (request) => {
       await admin.database().ref(`players/${uid}/matches/${firstAutomatchId}`).set(match);
 
       const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
-      sendTelegramMessage(`${existingPlayerName} automatched with ${name}`).catch(console.error);
+      sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
     }
     return {
       ok: true,
