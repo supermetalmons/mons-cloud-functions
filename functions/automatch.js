@@ -22,7 +22,7 @@ exports.automatch = onCall(async (request) => {
     if (existingAutomatchData.uid !== uid) {
       await admin.database().ref(`automatch/${firstAutomatchId}`).remove();
       const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
-      await sendTelegramMessage(`${existingPlayerName} automatched with ${name}`);
+      sendTelegramMessage(`${existingPlayerName} automatched with ${name}`).catch(console.error);
     }
     return {
       ok: true,
@@ -53,7 +53,7 @@ exports.automatch = onCall(async (request) => {
 
     await admin.database().ref(`players/${uid}/matches/${inviteId}`).set(match);
     const message = `${name} is looking for a match 👉 https://mons.link`;
-    await sendTelegramMessage(message);
+    sendTelegramMessage(message).catch(console.error);
 
     return {
       ok: true,
