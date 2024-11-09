@@ -31,11 +31,7 @@ exports.automatch = onCall(async (request) => {
       inviteId: firstAutomatchId,
     };
   } else {
-    const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let inviteId = "auto_";
-    for (let i = 0; i < 11; i++) {
-      inviteId += letters.charAt(Math.floor(Math.random() * letters.length));
-    }
+    const inviteId = generateInviteId();
     await admin.database().ref(`automatch/${inviteId}`).set({
       uid: uid,
       timestamp: admin.database.ServerValue.TIMESTAMP,
@@ -104,4 +100,13 @@ async function sendTelegramMessage(message) {
   } catch (error) {
     console.error("Error sending Telegram message:", error);
   }
+}
+
+function generateInviteId() {
+  const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let inviteId = "auto_";
+  for (let i = 0; i < 11; i++) {
+    inviteId += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  return inviteId;
 }
