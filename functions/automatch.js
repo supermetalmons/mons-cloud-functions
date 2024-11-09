@@ -71,7 +71,8 @@ exports.automatch = onCall(async (request) => {
       const playerEthAddressSnapshot = await playerEthAddressRef.once("value");
       if (playerEthAddressSnapshot && playerEthAddressSnapshot.val()) {
         const playerEthAddress = playerEthAddressSnapshot.val();
-        name = playerEthAddress.slice(2, 6) + "..." + playerEthAddress.slice(-4);
+        const shortAddress = playerEthAddress.slice(2, 6) + "..." + playerEthAddress.slice(-4);
+        name = `[${shortAddress.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&')}](https://etherscan.io/address/${playerEthAddress})`;
       }
     }
 
@@ -98,6 +99,8 @@ async function sendTelegramMessage(message) {
       body: JSON.stringify({
         chat_id: telegramChatId,
         text: message,
+        parse_mode: "MarkdownV2",
+        disable_web_page_preview: true
       }),
     });
   } catch (error) {
