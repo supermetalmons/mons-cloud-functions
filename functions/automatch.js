@@ -11,6 +11,7 @@ exports.automatch = onCall(async (request) => {
 
   let name = "anon";
   const uid = request.auth.uid;
+  const emojiId = request.data.emojiId;
 
   const automatchRef = admin.database().ref("automatch").limitToFirst(1);
   const snapshot = await automatchRef.once("value");
@@ -19,6 +20,7 @@ exports.automatch = onCall(async (request) => {
     const firstAutomatchId = Object.keys(snapshot.val())[0];
     const existingAutomatchData = snapshot.val()[firstAutomatchId];
     // TODO: make sure there is still no guest for this invite, otherwise try getting another automatch
+    // TODO: won't need to make sure though if joining automatch as a guest will be prohibited for a non admin users
     if (existingAutomatchData.uid !== uid) {
       await admin.database().ref(`automatch/${firstAutomatchId}`).remove();
       await sendTelegramMessage(
@@ -32,7 +34,7 @@ exports.automatch = onCall(async (request) => {
   } else {
     const letters =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let inviteId = "auto-";
+    let inviteId = "automatch";
     for (let i = 0; i < 11; i++) {
       inviteId += letters.charAt(Math.floor(Math.random() * letters.length));
     }
@@ -42,7 +44,6 @@ exports.automatch = onCall(async (request) => {
     });
 
     const hostColor = Math.random() < 0.5 ? "white" : "black";
-    const emojiId = "1"; // TODO: get from the player
     const controllerVersion = 2;
     const initialFen =
       "0 0 w 0 0 0 0 0 1 n03y0xs0xd0xa0xe0xn03/n11/n11/n04xxmn01xxmn04/n03xxmn01xxmn01xxmn03/xxQn04xxUn04xxQ/n03xxMn01xxMn01xxMn03/n04xxMn01xxMn04/n11/n11/n03E0xA0xD0xS0xY0xn03";
