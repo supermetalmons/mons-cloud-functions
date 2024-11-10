@@ -4,6 +4,7 @@ const { EAS, SchemaEncoder, EIP712Proxy } = require("@ethereum-attestation-servi
 const { ethers } = require("ethers");
 const glicko2 = require("glicko2");
 const admin = require("firebase-admin");
+const { batchReadWithRetry } = require("./utils");
 
 const secretManagerServiceClient = new SecretManagerServiceClient();
 
@@ -28,7 +29,14 @@ exports.attestMatchVictory = onCall(async (request) => {
   const playerEthAddressRef = admin.database().ref(`players/${uid}/ethAddress`);
   const opponentEthAddressRef = admin.database().ref(`players/${opponentId}/ethAddress`);
 
-  const [matchSnapshot, inviteSnapshot, opponentMatchSnapshot, playerEthAddressSnapshot, opponentEthAddressSnapshot] = await Promise.all([matchRef.once("value"), inviteRef.once("value"), opponentMatchRef.once("value"), playerEthAddressRef.once("value"), opponentEthAddressRef.once("value")]);
+  const [matchSnapshot, inviteSnapshot, opponentMatchSnapshot, playerEthAddressSnapshot, opponentEthAddressSnapshot] = 
+    await batchReadWithRetry([
+      matchRef, 
+      inviteRef, 
+      opponentMatchRef, 
+      playerEthAddressRef, 
+      opponentEthAddressRef
+    ]);
 
   const matchData = matchSnapshot.val();
   const inviteData = inviteSnapshot.val();
