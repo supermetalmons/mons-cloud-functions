@@ -18,8 +18,6 @@ exports.automatch = onCall(async (request) => {
     const firstAutomatchId = Object.keys(snapshot.val())[0];
     const existingAutomatchData = snapshot.val()[firstAutomatchId];
     if (existingAutomatchData.uid !== uid) {
-      await admin.database().ref(`automatch/${firstAutomatchId}`).remove();
-
       const invite = {
         version: controllerVersion,
         hostId: existingAutomatchData.uid,
@@ -38,8 +36,11 @@ exports.automatch = onCall(async (request) => {
         timer: "",
       };
 
-      await admin.database().ref(`invites/${firstAutomatchId}`).set(invite);
-      await admin.database().ref(`players/${uid}/matches/${firstAutomatchId}`).set(match);
+      const updates = {};
+      updates[`automatch/${firstAutomatchId}`] = null;
+      updates[`invites/${firstAutomatchId}`] = invite;
+      updates[`players/${uid}/matches/${firstAutomatchId}`] = match;
+      await admin.database().ref().update(updates);
 
       const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
       sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
@@ -51,7 +52,6 @@ exports.automatch = onCall(async (request) => {
   } else {
     const inviteId = generateInviteId();
     const password = generateRandomString(15);
-    await admin.database().ref(`automatch/${inviteId}`).set({ uid: uid, timestamp: admin.database.ServerValue.TIMESTAMP, ethAddress: ethAddress, hostColor: hostColor, password: password });
 
     const invite = {
       version: controllerVersion,
@@ -60,8 +60,6 @@ exports.automatch = onCall(async (request) => {
       guestId: null,
       password: password,
     };
-
-    await admin.database().ref(`invites/${inviteId}`).set(invite);
 
     const match = {
       version: controllerVersion,
@@ -73,7 +71,12 @@ exports.automatch = onCall(async (request) => {
       timer: "",
     };
 
-    await admin.database().ref(`players/${uid}/matches/${inviteId}`).set(match);
+    const updates = {};
+    updates[`players/${uid}/matches/${inviteId}`] = match;
+    updates[`automatch/${inviteId}`] = { uid: uid, timestamp: admin.database.ServerValue.TIMESTAMP, ethAddress: ethAddress, hostColor: hostColor, password: password };
+    updates[`invites/${inviteId}`] = invite;
+    await admin.database().ref().update(updates);
+
     const message = `${name} is looking for a match 👉 https://mons.link`;
     sendTelegramMessage(message).catch(console.error);
 
