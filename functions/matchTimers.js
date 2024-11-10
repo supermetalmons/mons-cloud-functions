@@ -7,11 +7,11 @@ exports.startMatchTimer = onCall(async (request) => {
   const matchId = request.data.matchId;
 
   const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
-  const matchSnapshot = await matchRef.once("value");
-  const matchData = matchSnapshot.val();
-
   const inviteRef = admin.database().ref(`invites/${inviteId}`);
-  const inviteSnapshot = await inviteRef.once("value");
+
+  const [matchSnapshot, inviteSnapshot] = await Promise.all([matchRef.once("value"), inviteRef.once("value")]);
+
+  const matchData = matchSnapshot.val();
   const inviteData = inviteSnapshot.val();
 
   const opponentId = inviteData.guestId === uid ? inviteData.hostId : inviteData.guestId;
@@ -75,11 +75,9 @@ exports.claimMatchVictoryByTimer = onCall(async (request) => {
   const matchId = request.data.matchId;
 
   const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
-  const matchSnapshot = await matchRef.once("value");
-  const matchData = matchSnapshot.val();
-
   const inviteRef = admin.database().ref(`invites/${inviteId}`);
-  const inviteSnapshot = await inviteRef.once("value");
+  const [matchSnapshot, inviteSnapshot] = await Promise.all([matchRef.once("value"), inviteRef.once("value")]);
+  const matchData = matchSnapshot.val();
   const inviteData = inviteSnapshot.val();
 
   const opponentId = inviteData.guestId === uid ? inviteData.hostId : inviteData.guestId;
