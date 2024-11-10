@@ -3,21 +3,14 @@ const admin = require("firebase-admin");
 
 exports.startMatchTimer = onCall(async (request) => {
   const uid = request.auth.uid;
-  const inviteId = request.data.inviteId;
   const matchId = request.data.matchId;
+  const opponentId = request.data.opponentId;
 
   const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
-  const inviteRef = admin.database().ref(`invites/${inviteId}`);
-
-  const [matchSnapshot, inviteSnapshot] = await Promise.all([matchRef.once("value"), inviteRef.once("value")]);
-
-  const matchData = matchSnapshot.val();
-  const inviteData = inviteSnapshot.val();
-
-  const opponentId = inviteData.guestId === uid ? inviteData.hostId : inviteData.guestId;
-
   const opponentMatchRef = admin.database().ref(`players/${opponentId}/matches/${matchId}`);
-  const opponentMatchSnapshot = await opponentMatchRef.once("value");
+
+  const [matchSnapshot, opponentMatchSnapshot] = await Promise.all([matchRef.once("value"), opponentMatchRef.once("value")]);
+  const matchData = matchSnapshot.val();
   const opponentMatchData = opponentMatchSnapshot.val();
 
   const color = matchData.color;
@@ -73,17 +66,20 @@ exports.claimMatchVictoryByTimer = onCall(async (request) => {
   const uid = request.auth.uid;
   const inviteId = request.data.inviteId;
   const matchId = request.data.matchId;
+  const opponentId = request.data.opponentId;
 
   const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
-  const inviteRef = admin.database().ref(`invites/${inviteId}`);
-  const [matchSnapshot, inviteSnapshot] = await Promise.all([matchRef.once("value"), inviteRef.once("value")]);
-  const matchData = matchSnapshot.val();
-  const inviteData = inviteSnapshot.val();
-
-  const opponentId = inviteData.guestId === uid ? inviteData.hostId : inviteData.guestId;
-
   const opponentMatchRef = admin.database().ref(`players/${opponentId}/matches/${matchId}`);
-  const opponentMatchSnapshot = await opponentMatchRef.once("value");
+  const inviteRef = admin.database().ref(`invites/${inviteId}`);
+
+  const [matchSnapshot, opponentMatchSnapshot, inviteSnapshot] = await Promise.all([matchRef.once("value"), opponentMatchRef.once("value"), inviteRef.once("value")]);
+
+  const inviteData = inviteSnapshot.val();
+  if (!((inviteData.hostId === uid && inviteData.guestId === opponentId) || (inviteData.hostId === opponentId && inviteData.guestId === uid))) {
+    throw new HttpsError("permission-denied", "Players don't match invite data");
+  }
+
+  const matchData = matchSnapshot.val();
   const opponentMatchData = opponentMatchSnapshot.val();
 
   const color = matchData.color;
