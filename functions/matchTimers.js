@@ -1,6 +1,28 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 
+const batchReadWithRetry = async (refs) => {
+  const initialSnapshots = await Promise.all(
+    refs.map(ref => 
+      ref.once("value").catch(error => {
+        console.error("Error in initial batch read:", error);
+        return null;
+      })
+    )
+  );
+
+  const finalSnapshots = await Promise.all(
+    initialSnapshots.map(async (snapshot, index) => {
+      if (snapshot === null) {
+        return refs[index].once("value");
+      }
+      return snapshot;
+    })
+  );
+
+  return finalSnapshots;
+};
+
 exports.startMatchTimer = onCall(async (request) => {
   const uid = request.auth.uid;
   const matchId = request.data.matchId;
@@ -9,7 +31,8 @@ exports.startMatchTimer = onCall(async (request) => {
   const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
   const opponentMatchRef = admin.database().ref(`players/${opponentId}/matches/${matchId}`);
 
-  const [matchSnapshot, opponentMatchSnapshot] = await Promise.all([matchRef.once("value"), opponentMatchRef.once("value")]);
+  const [matchSnapshot, opponentMatchSnapshot] = await batchReadWithRetry([matchRef, opponentMatchRef]);
+
   const matchData = matchSnapshot.val();
   const opponentMatchData = opponentMatchSnapshot.val();
 
@@ -72,7 +95,7 @@ exports.claimMatchVictoryByTimer = onCall(async (request) => {
   const opponentMatchRef = admin.database().ref(`players/${opponentId}/matches/${matchId}`);
   const inviteRef = admin.database().ref(`invites/${inviteId}`);
 
-  const [matchSnapshot, opponentMatchSnapshot, inviteSnapshot] = await Promise.all([matchRef.once("value"), opponentMatchRef.once("value"), inviteRef.once("value")]);
+  const [matchSnapshot, opponentMatchSnapshot, inviteSnapshot] = await batchReadWithRetry([matchRef, opponentMatchRef, inviteRef]);
 
   const inviteData = inviteSnapshot.val();
   if (!((inviteData.hostId === uid && inviteData.guestId === opponentId) || (inviteData.hostId === opponentId && inviteData.guestId === uid))) {
