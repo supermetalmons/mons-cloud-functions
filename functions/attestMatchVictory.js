@@ -16,36 +16,33 @@ exports.attestMatchVictory = onCall(async (request) => {
   const uid = request.auth.uid;
   const inviteId = request.data.inviteId;
   const matchId = request.data.matchId;
+  const opponentId = request.data.opponentId;
 
   if (!inviteId.startsWith("auto_")) {
     return { ok: false };
   }
 
   const matchRef = admin.database().ref(`players/${uid}/matches/${matchId}`);
-  const matchSnapshot = await matchRef.once("value");
-  const matchData = matchSnapshot.val();
-
   const inviteRef = admin.database().ref(`invites/${inviteId}`);
-  const inviteSnapshot = await inviteRef.once("value");
-  const inviteData = inviteSnapshot.val();
-
-  const opponentId = inviteData.guestId === uid ? inviteData.hostId : inviteData.guestId;
-
   const opponentMatchRef = admin.database().ref(`players/${opponentId}/matches/${matchId}`);
-  const opponentMatchSnapshot = await opponentMatchRef.once("value");
-  const opponentMatchData = opponentMatchSnapshot.val();
-
   const playerEthAddressRef = admin.database().ref(`players/${uid}/ethAddress`);
-  const playerEthAddressSnapshot = await playerEthAddressRef.once("value");
+  const opponentEthAddressRef = admin.database().ref(`players/${opponentId}/ethAddress`);
+
+  const [matchSnapshot, inviteSnapshot, opponentMatchSnapshot, playerEthAddressSnapshot, opponentEthAddressSnapshot] = await Promise.all([matchRef.once("value"), inviteRef.once("value"), opponentMatchRef.once("value"), playerEthAddressRef.once("value"), opponentEthAddressRef.once("value")]);
+
+  const matchData = matchSnapshot.val();
+  const inviteData = inviteSnapshot.val();
+  const opponentMatchData = opponentMatchSnapshot.val();
   const playerEthAddress = playerEthAddressSnapshot.val();
+  const opponentEthAddress = opponentEthAddressSnapshot.val();
+
+  if (!((inviteData.hostId === uid && inviteData.guestId === opponentId) || (inviteData.hostId === opponentId && inviteData.guestId === uid))) {
+    throw new HttpsError("permission-denied", "Players don't match invite data");
+  }
 
   if (!playerEthAddress) {
     throw new HttpsError("failed-precondition", "Player's Ethereum address not found.");
   }
-
-  const opponentEthAddressRef = admin.database().ref(`players/${opponentId}/ethAddress`);
-  const opponentEthAddressSnapshot = await opponentEthAddressRef.once("value");
-  const opponentEthAddress = opponentEthAddressSnapshot.val();
 
   if (!opponentEthAddress) {
     throw new HttpsError("failed-precondition", "Opponent's Ethereum address not found.");
