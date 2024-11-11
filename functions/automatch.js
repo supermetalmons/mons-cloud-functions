@@ -55,12 +55,15 @@ async function attemptAutomatch(uid, ethAddress, name, emojiId, retryCount) {
       await admin.database().ref().update(updates);
 
       sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
-
+    
       // try {
-      //   await acceptInvite(firstAutomatchId, invite, match, uid);
-      //   const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
-      //   sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
-      // } catch (_) {
+      //   const success = await acceptInvite(firstAutomatchId, invite, match, uid);
+      //   if (success) {
+      //     sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
+      //   } else {
+      //     return await attemptAutomatch(uid, ethAddress, name, emojiId, retryCount + 1);
+      //   }
+      // } catch (error) {
       //   return await attemptAutomatch(uid, ethAddress, name, emojiId, retryCount + 1);
       // }
     }
@@ -106,31 +109,33 @@ async function attemptAutomatch(uid, ethAddress, name, emojiId, retryCount) {
   }
 }
 
-// async function acceptInvite(firstAutomatchId, invite, match, uid) {
-//   const automatchRef = admin.database().ref(`automatch/${firstAutomatchId}`);
-//   return automatchRef
-//     .transaction((currentData) => {
-//       if (currentData === null) {
-//         return;
-//       } else {
-//         return null;
-//       }
-//     })
-//     .then(async (result) => {
-//       const { committed } = result;
-//       if (!committed) {
-//         throw new Error("Automatch already processed or does not exist.");
-//       }
-//       const updates = {};
-//       updates[`invites/${firstAutomatchId}`] = invite;
-//       updates[`players/${uid}/matches/${firstAutomatchId}`] = match;
-//       await admin.database().ref().update(updates);
-//       return true;
-//     })
-//     .catch((error) => {
-//       throw error;
-//     });
-// }
+async function acceptInvite(firstAutomatchId, invite, match, uid) {
+  const inviteRef = admin.database().ref(`invites/${firstAutomatchId}`);
+  return inviteRef
+    .transaction((currentData) => {
+      if (currentData === null) {
+        return;
+      }
+      if (currentData.guestId) {
+        return;
+      } else {
+        return invite;
+      }
+    })
+    .then(async (result) => {
+      const { committed, _ } = result;
+      if (!committed) {
+        throw new Error("Invite already accepted by another player.");
+      }
+
+      const updates = {};
+      updates[`players/${uid}/matches/${firstAutomatchId}`] = match;
+      updates[`automatch/${firstAutomatchId}`] = null;
+
+      await admin.database().ref().update(updates);
+      return true;
+    });
+}
 
 async function sendTelegramMessage(message) {
   const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
