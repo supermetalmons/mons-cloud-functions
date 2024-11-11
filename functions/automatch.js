@@ -11,11 +11,16 @@ exports.automatch = onCall(async (request) => {
   const name = getDisplayNameFromAddress(ethAddress);
   const emojiId = request.data.emojiId;
 
-  const automatchAttemptResult = await attemptAutomatch(uid, ethAddress, name, emojiId);
+  const automatchAttemptResult = await attemptAutomatch(uid, ethAddress, name, emojiId, 0);
   return automatchAttemptResult;
 });
 
-async function attemptAutomatch(uid, ethAddress, name, emojiId) {
+async function attemptAutomatch(uid, ethAddress, name, emojiId, retryCount) {
+  const maxRetryCount = 3;
+  if (retryCount > maxRetryCount) {
+    return { ok: false };
+  }
+
   const automatchRef = admin.database().ref("automatch").limitToFirst(1);
   const snapshot = await automatchRef.once("value");
 
@@ -23,6 +28,8 @@ async function attemptAutomatch(uid, ethAddress, name, emojiId) {
     const firstAutomatchId = Object.keys(snapshot.val())[0];
     const existingAutomatchData = snapshot.val()[firstAutomatchId];
     if (existingAutomatchData.uid !== uid) {
+      const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
+
       const invite = {
         version: controllerVersion,
         hostId: existingAutomatchData.uid,
@@ -47,8 +54,15 @@ async function attemptAutomatch(uid, ethAddress, name, emojiId) {
       updates[`players/${uid}/matches/${firstAutomatchId}`] = match;
       await admin.database().ref().update(updates);
 
-      const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
       sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
+
+      // try {
+      //   await acceptInvite(firstAutomatchId, invite, match, uid);
+      //   const existingPlayerName = getDisplayNameFromAddress(existingAutomatchData.ethAddress);
+      //   sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
+      // } catch (_) {
+      //   return await attemptAutomatch(uid, ethAddress, name, emojiId, retryCount + 1);
+      // }
     }
     return {
       ok: true,
@@ -91,6 +105,32 @@ async function attemptAutomatch(uid, ethAddress, name, emojiId) {
     };
   }
 }
+
+// async function acceptInvite(firstAutomatchId, invite, match, uid) {
+//   const automatchRef = admin.database().ref(`automatch/${firstAutomatchId}`);
+//   return automatchRef
+//     .transaction((currentData) => {
+//       if (currentData === null) {
+//         return;
+//       } else {
+//         return null;
+//       }
+//     })
+//     .then(async (result) => {
+//       const { committed } = result;
+//       if (!committed) {
+//         throw new Error("Automatch already processed or does not exist.");
+//       }
+//       const updates = {};
+//       updates[`invites/${firstAutomatchId}`] = invite;
+//       updates[`players/${uid}/matches/${firstAutomatchId}`] = match;
+//       await admin.database().ref().update(updates);
+//       return true;
+//     })
+//     .catch((error) => {
+//       throw error;
+//     });
+// }
 
 async function sendTelegramMessage(message) {
   const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
