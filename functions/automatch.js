@@ -11,6 +11,11 @@ exports.automatch = onCall(async (request) => {
   const name = getDisplayNameFromAddress(ethAddress);
   const emojiId = request.data.emojiId;
 
+  const automatchAttemptResult = await attemptAutomatch(uid, ethAddress, name, emojiId);
+  return automatchAttemptResult;
+});
+
+async function attemptAutomatch(uid, ethAddress, name, emojiId) {
   const automatchRef = admin.database().ref("automatch").limitToFirst(1);
   const snapshot = await automatchRef.once("value");
 
@@ -85,14 +90,14 @@ exports.automatch = onCall(async (request) => {
       inviteId: inviteId,
     };
   }
-});
+}
 
 async function sendTelegramMessage(message) {
   const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
   const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
   try {
-    await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+    fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
