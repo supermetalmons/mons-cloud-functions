@@ -107,7 +107,10 @@ async function acceptInvite(firstAutomatchId, invite, match, uid) {
   updates[`invites/${firstAutomatchId}`] = invite;
   updates[`players/${uid}/matches/${firstAutomatchId}`] = match;
   await admin.database().ref().update(updates);
-  return true;
+  const guestIdRef = admin.database().ref(`invites/${firstAutomatchId}/guestId`);
+  const guestIdSnapshot = await guestIdRef.once("value");
+  const finalGuestId = guestIdSnapshot.val();
+  return finalGuestId === uid;
 }
 
 async function sendTelegramMessage(message) {
