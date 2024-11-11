@@ -48,24 +48,16 @@ async function attemptAutomatch(uid, ethAddress, name, emojiId, retryCount) {
         timer: "",
       };
 
-      const updates = {};
-      updates[`automatch/${firstAutomatchId}`] = null;
-      updates[`invites/${firstAutomatchId}`] = invite;
-      updates[`players/${uid}/matches/${firstAutomatchId}`] = match;
-      await admin.database().ref().update(updates);
-
-      sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
-    
-      // try {
-      //   const success = await acceptInvite(firstAutomatchId, invite, match, uid);
-      //   if (success) {
-      //     sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
-      //   } else {
-      //     return await attemptAutomatch(uid, ethAddress, name, emojiId, retryCount + 1);
-      //   }
-      // } catch (error) {
-      //   return await attemptAutomatch(uid, ethAddress, name, emojiId, retryCount + 1);
-      // }
+      try {
+        const success = await acceptInvite(firstAutomatchId, invite, match, uid);
+        if (success) {
+          sendTelegramMessage(`${existingPlayerName} automatched with ${name} https://mons.link/${firstAutomatchId}`).catch(console.error);
+        } else {
+          return await attemptAutomatch(uid, ethAddress, name, emojiId, retryCount + 1);
+        }
+      } catch (error) {
+        return await attemptAutomatch(uid, ethAddress, name, emojiId, retryCount + 1);
+      }
     }
     return {
       ok: true,
@@ -110,31 +102,12 @@ async function attemptAutomatch(uid, ethAddress, name, emojiId, retryCount) {
 }
 
 async function acceptInvite(firstAutomatchId, invite, match, uid) {
-  const inviteRef = admin.database().ref(`invites/${firstAutomatchId}`);
-  return inviteRef
-    .transaction((currentData) => {
-      if (currentData === null) {
-        return;
-      }
-      if (currentData.guestId) {
-        return;
-      } else {
-        return invite;
-      }
-    })
-    .then(async (result) => {
-      const { committed, _ } = result;
-      if (!committed) {
-        throw new Error("Invite already accepted by another player.");
-      }
-
-      const updates = {};
-      updates[`players/${uid}/matches/${firstAutomatchId}`] = match;
-      updates[`automatch/${firstAutomatchId}`] = null;
-
-      await admin.database().ref().update(updates);
-      return true;
-    });
+  const updates = {};
+  updates[`automatch/${firstAutomatchId}`] = null;
+  updates[`invites/${firstAutomatchId}`] = invite;
+  updates[`players/${uid}/matches/${firstAutomatchId}`] = match;
+  await admin.database().ref().update(updates);
+  return true;
 }
 
 async function sendTelegramMessage(message) {
